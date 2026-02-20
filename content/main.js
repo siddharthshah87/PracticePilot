@@ -35,14 +35,6 @@
   let urlPollInterval = null;   // setInterval ID for URL polling
   let domObserverRef = null;    // MutationObserver reference for cleanup
 
-  // ── Drag-to-move state ──────────────────────────────────
-  let isDragging = false;
-  let dragStartX = 0;
-  let dragStartY = 0;
-  let dragPanelStartX = 0;
-  let dragPanelStartY = 0;
-  const DRAG_THRESHOLD = 5; // px moved before it counts as drag (vs click)
-
   // ── Panel DOM Creation ──────────────────────────────────
 
   function createPanel() {
@@ -54,12 +46,13 @@
     panelEl = document.createElement("div");
     panelEl.id = "pp-panel";
     panelEl.innerHTML = buildPanelHTML("idle");
-    panelEl.style.display = "block";  // ensure visible
     document.body.appendChild(panelEl);
 
-    // Wire up header collapse toggle + drag-to-move
+    // Slide open after a frame so the CSS transition fires
+    requestAnimationFrame(() => panelEl.classList.add("pp-open"));
+
+    // Wire up header toggle + close
     panelEl.addEventListener("click", handlePanelClick);
-    initDrag();
 
     // Wire CDT search if idle-state includes it (it won't, but guard)
     const cdtInput = panelEl.querySelector(".pp-cdt-search");
@@ -97,16 +90,13 @@
     }
 
     return `
-      <div class="pp-header" data-action="toggle">
+      <div class="pp-header">
         <div>
           <span class="pp-header-title">PracticePilot</span>
           ${pageLabel ? `<span class="pp-header-badge">${pageLabel}</span>` : ""}
         </div>
         <div class="pp-header-actions">
-          <button class="pp-header-btn" data-action="toggle" title="Minimize">
-            <span class="pp-caret">▼</span>
-          </button>
-          <button class="pp-header-btn" data-action="close" title="Close">✕</button>
+          <button class="pp-header-btn" data-action="close" title="Close panel">✕</button>
         </div>
       </div>
       <div class="pp-body">
@@ -744,99 +734,17 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
 
   // ── Event handling ──────────────────────────────────────
 
-  // ── Drag-to-move ────────────────────────────────────────
 
-  function initDrag() {
-    // Use panelEl (stable) instead of header (replaced on re-render)
-    panelEl.addEventListener("mousedown", onDragStart);
-    document.addEventListener("mousemove", onDragMove);
-    document.addEventListener("mouseup", onDragEnd);
-  }
-
-  function onDragStart(e) {
-    // Only trigger on the header area, not body content
-    const header = e.target.closest(".pp-header");
-    if (!header) return;
-    // Only left click, ignore buttons inside header
-    if (e.button !== 0) return;
-    if (e.target.closest(".pp-header-btn")) return;
-
-    // Mark drag as "pending" — will become true if mouse moves past threshold
-    isDragging = false;
-    panelEl._dragPending = true;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-
-    const rect = panelEl.getBoundingClientRect();
-    dragPanelStartX = rect.left;
-    dragPanelStartY = rect.top;
-
-    panelEl.classList.add("pp-dragging");
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  function onDragMove(e) {
-    if (!panelEl.classList.contains("pp-dragging")) return;
-
-    const dx = e.clientX - dragStartX;
-    const dy = e.clientY - dragStartY;
-
-    if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
-      isDragging = true;
-      // Switch from right-anchored to left-anchored positioning
-      panelEl.style.right = "auto";
-    }
-
-    if (!isDragging) return;
-
-    // Calculate new position, clamp to viewport
-    let newLeft = dragPanelStartX + dx;
-    let newTop  = dragPanelStartY + dy;
-
-    const pw = panelEl.offsetWidth;
-    const ph = panelEl.offsetHeight;
-    newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - pw));
-    newTop  = Math.max(0, Math.min(newTop, window.innerHeight - 48)); // keep header visible
-
-    panelEl.style.left = newLeft + "px";
-    panelEl.style.top  = newTop  + "px";
-  }
-
-  function onDragEnd() {
-    if (!panelEl.classList.contains("pp-dragging")) return;
-    panelEl.classList.remove("pp-dragging");
-    panelEl._dragPending = false;
-
-    // If it was a real drag, suppress the click that follows mouseup
-    if (isDragging) {
-      panelEl.addEventListener("click", suppressClick, true);
-    }
-    isDragging = false;
-  }
-
-  function suppressClick(e) {
-    e.stopPropagation();
-    e.preventDefault();
-    panelEl.removeEventListener("click", suppressClick, true);
-  }
 
   function handlePanelClick(e) {
-    // If we just finished a drag attempt (mousedown on header), don't toggle
-    if (panelEl._dragPending) return;
-
     const target = e.target.closest("[data-action]");
     if (!target) return;
 
     const action = target.dataset.action;
 
     switch (action) {
-      case "toggle":
-        panelEl.classList.toggle("pp-collapsed");
-        break;
-
       case "close":
-        panelEl.style.display = "none";
+        panelEl.classList.remove("pp-open");
         break;
 
       case "capture-page":
@@ -1227,6 +1135,10 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
     if (!panelEl) return;
     isUpdatingPanel = true;
     panelEl.innerHTML = buildPanelHTML(state, extra);
+    // Ensure panel is visible
+    if (!panelEl.classList.contains("pp-open")) {
+      panelEl.classList.add("pp-open");
+    }
     // Allow microtasks to settle before re-enabling observer
     requestAnimationFrame(() => { isUpdatingPanel = false; });
 
@@ -1371,14 +1283,13 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
     switch (msg.type) {
       case "PP_SHOW_PANEL":
         if (panelEl) {
-          panelEl.style.display = "";
-          panelEl.classList.remove("pp-collapsed");
+          panelEl.classList.add("pp-open");
         }
         sendResponse({ ok: true });
         break;
 
       case "PP_HIDE_PANEL":
-        if (panelEl) panelEl.style.display = "none";
+        if (panelEl) panelEl.classList.remove("pp-open");
         sendResponse({ ok: true });
         break;
 

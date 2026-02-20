@@ -28,31 +28,30 @@
   --pp-font:       'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* ── Container ─────────────────────────────────────────── */
+/* ── Container (right-side slide-in panel) ─────────────── */
 
 #pp-panel {
   position: fixed;
-  right: 16px;
-  top: 80px;
-  width: 360px;
-  /* left/top set by drag; right cleared dynamically */
-  max-height: calc(100vh - 100px);
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100vh;
   overflow-y: auto;
   z-index: 2147483647;
   background: #fff;
-  border: 1px solid var(--pp-gray-200);
-  border-radius: var(--pp-radius);
-  box-shadow: var(--pp-shadow);
+  border-left: 1px solid var(--pp-gray-200);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
   font-family: var(--pp-font);
   font-size: 13px;
   line-height: 1.5;
   color: var(--pp-gray-900);
-  transition: opacity 0.2s, transform 0.2s;
+  /* Slide in from right */
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
 }
 
-#pp-panel.pp-collapsed {
-  max-height: 48px;
-  overflow: hidden;
+#pp-panel.pp-open {
+  transform: translateX(0);
 }
 
 #pp-panel * {
@@ -72,19 +71,13 @@
   justify-content: space-between;
   padding: 10px 14px;
   background: var(--pp-blue);
-  border-radius: var(--pp-radius) var(--pp-radius) 0 0;
   color: #fff;
-  cursor: grab;
   user-select: none;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
-.pp-header:active { cursor: grabbing; }
-
-#pp-panel.pp-dragging {
-  opacity: 0.92;
-  transition: none;
-  user-select: none;
-}
 
 .pp-header-title {
   font-weight: 700;
@@ -505,16 +498,6 @@
   border-bottom: 1px solid var(--pp-gray-200);
 }
 
-/* ── Minimize toggle caret ─────────────────────────────── */
-
-.pp-caret {
-  display: inline-block;
-  transition: transform 0.2s;
-}
-
-.pp-collapsed .pp-caret {
-  transform: rotate(180deg);
-}
 
 /* ── Cache bar / indicator ─────────────────────────────── */
 
