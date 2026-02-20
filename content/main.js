@@ -31,6 +31,9 @@
   let isChatting = false;       // prevent concurrent chat calls
   let isScanning = false;       // prevent re-entrant patient scans
   let isUpdatingPanel = false;  // suppress observer during our own DOM writes
+  let extensionDead = false;    // true once "context invalidated" fires — stops all activity
+  let urlPollInterval = null;   // setInterval ID for URL polling
+  let domObserverRef = null;    // MutationObserver reference for cleanup
 
   // ── Drag-to-move state ──────────────────────────────────
   let isDragging = false;
@@ -537,6 +540,7 @@
 
   /** Handle chat send — calls Claude with patient context */
   async function handleChatSend() {
+    if (extensionDead) return;
     const input = panelEl?.querySelector("#pp-chat-input");
     const log = panelEl?.querySelector("#pp-chat-log");
     if (!input || !log) return;
@@ -654,6 +658,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
   // ── Patient view scan + action list ─────────────────────
 
   async function scanPatientAndShowActions() {
+    if (extensionDead) return;
     if (!PP.patientContext) return;
     if (isScanning) return; // prevent re-entrant calls
     isScanning = true;
@@ -703,8 +708,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
     } catch (e) {
       // "Extension context invalidated" = extension was reloaded; stop gracefully
       if (/context invalidated/i.test(e.message)) {
-        console.log("[PracticePilot] Extension reloaded — stopping old content script.");
-        if (actionScanTimer) clearTimeout(actionScanTimer);
+        teardownEverything();
         return;
       }
       console.warn("[PracticePilot] Patient scan error:", e);
@@ -713,10 +717,25 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
     }
   }
 
+  /** Kill all recurring tasks — called when extension context is invalidated */
+  function teardownEverything() {
+    if (extensionDead) return;
+    extensionDead = true;
+    console.log("[PracticePilot] Extension reloaded — tearing down old content script.");
+    if (actionScanTimer) clearTimeout(actionScanTimer);
+    if (urlPollInterval) clearInterval(urlPollInterval);
+    if (domObserverRef) domObserverRef.disconnect();
+    if (cleanupDetector) { cleanupDetector(); cleanupDetector = null; }
+    // Remove stale panel so fresh injection starts clean
+    if (panelEl) { panelEl.remove(); panelEl = null; }
+  }
+
   /** Debounced re-scan — triggers 800ms after DOM settles */
   function schedulePatientRescan() {
+    if (extensionDead) return;
     if (actionScanTimer) clearTimeout(actionScanTimer);
     actionScanTimer = setTimeout(() => {
+      if (extensionDead) return;
       if (currentPageType === PP.pageDetector?.PAGE_TYPES?.PATIENT_VIEW) {
         scanPatientAndShowActions();
       }
@@ -1142,7 +1161,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
   }
 
   async function captureAndExtract(mode) {
-    if (isExtracting) return;
+    if (extensionDead || isExtracting) return;
 
     // Get text based on mode
     let rawText;
@@ -1426,8 +1445,8 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
 
       // Watch for DOM changes in patient view → re-scan on tab switches
       // IMPORTANT: ignore mutations inside our own panel to prevent infinite loops
-      const domObserver = new MutationObserver((mutations) => {
-        if (isUpdatingPanel) return; // our own panel write — skip
+      domObserverRef = new MutationObserver((mutations) => {
+        if (extensionDead || isUpdatingPanel) return;
         if (currentPageType !== PP.pageDetector?.PAGE_TYPES?.PATIENT_VIEW) return;
 
         // Check that at least one mutation is outside #pp-panel
@@ -1439,11 +1458,12 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
           schedulePatientRescan();
         }
       });
-      domObserver.observe(document.body, { childList: true, subtree: true });
+      domObserverRef.observe(document.body, { childList: true, subtree: true });
 
       // Also watch URL hash/path changes for SPA patient navigation
       let lastPatientUrl = window.location.href;
-      setInterval(() => {
+      urlPollInterval = setInterval(() => {
+        if (extensionDead) return;
         const currentUrl = window.location.href;
         if (currentUrl !== lastPatientUrl) {
           lastPatientUrl = currentUrl;
