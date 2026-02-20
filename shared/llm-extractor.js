@@ -181,6 +181,10 @@ Return ONLY the JSON object, no markdown, no explanation.`,
    * @returns {Object} { card: BenefitCard, raw: LLMResponse, redactionInfo }
    */
   async extract(rawText) {
+    // 0. Capture patient identity locally BEFORE redaction (never sent to LLM)
+    const patientName = PracticePilot.phiRedactor.extractPatientName(rawText);
+    const subscriberId = PracticePilot.phiRedactor.extractSubscriberId(rawText);
+
     // 1. Redact PHI
     const redactionResult = PracticePilot.phiRedactor.redact(rawText);
     const cleanText = redactionResult.redactedText;
@@ -210,6 +214,10 @@ Return ONLY the JSON object, no markdown, no explanation.`,
 
     // 5. Convert to BenefitCard format
     const card = this._toBenefitCard(extracted);
+
+    // 6. Attach locally-captured patient identity (stays on device)
+    card.patientName = patientName;
+    card.subscriberId = subscriberId;
 
     return {
       card,

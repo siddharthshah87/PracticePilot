@@ -18,6 +18,9 @@ PracticePilot.normalize = {
       capturedAt: new Date().toISOString(),
       sourceUrl: raw.sourceUrl ?? window.location.href,
 
+      // Patient identity (captured locally, never sent to LLM)
+      patientName: raw.patientName ?? null,
+
       // Plan identification
       payer:       raw.payer       ?? null,
       planName:    raw.planName    ?? null,

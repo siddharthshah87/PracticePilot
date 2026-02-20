@@ -127,6 +127,45 @@ PracticePilot.phiRedactor = {
   },
 
   /**
+   * Extract patient name from raw text BEFORE redaction.
+   * This stays local — never sent to the LLM.
+   * Returns the name string or null.
+   */
+  extractPatientName(text) {
+    // "Patient Name: FIRSTNAME LASTNAME" or "Patient: ..."
+    const patterns = [
+      /Patient\s+Name\s*:\s*([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,3})/i,
+      /Patient\s*:\s*([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,3})/i,
+      /Name\s*:\s*([A-Z][A-Za-z'\-]+,\s*[A-Z][A-Za-z'\-]+)/i, // Last, First
+      /Subscriber\s+Name\s*:\s*([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,3})/i,
+      /Member\s+Name\s*:\s*([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,3})/i,
+      /Insured\s+Name\s*:\s*([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,3})/i,
+    ];
+    for (const p of patterns) {
+      const match = text.match(p);
+      if (match?.[1]) return match[1].trim();
+    }
+    return null;
+  },
+
+  /**
+   * Extract subscriber/member ID from raw text BEFORE redaction.
+   * This stays local — never sent to the LLM.
+   */
+  extractSubscriberId(text) {
+    const patterns = [
+      /SS#\s*\/?\s*ID#\s*:\s*([A-Za-z0-9\-]+)/i,
+      /Subscriber\s*(?:ID|#|Number)\s*:\s*([A-Za-z0-9\-]+)/i,
+      /Member\s*(?:ID|#|Number)\s*:\s*([A-Za-z0-9\-]+)/i,
+    ];
+    for (const p of patterns) {
+      const match = text.match(p);
+      if (match?.[1]) return match[1].trim();
+    }
+    return null;
+  },
+
+  /**
    * Quick check: does the text appear to contain PHI?
    * Useful for warning the user before they manually copy.
    */

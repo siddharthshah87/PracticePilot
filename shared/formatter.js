@@ -21,6 +21,9 @@ PracticePilot.formatter = {
     lines.push(`INSURANCE VERIFICATION — ${today}`);
     lines.push(`══════════════════════════════════`);
 
+    // Patient
+    if (card.patientName) lines.push(`Patient:       ${card.patientName}`);
+
     // Plan info
     if (card.payer)       lines.push(`Carrier:       ${card.payer}`);
     if (card.planName)    lines.push(`Plan:          ${card.planName}`);
@@ -125,6 +128,7 @@ PracticePilot.formatter = {
    */
   compactSummary(card) {
     const parts = [];
+    if (card.patientName) parts.push(card.patientName);
     if (card.payer)    parts.push(card.payer);
     if (card.planType) parts.push(card.planType);
 
@@ -163,6 +167,130 @@ PracticePilot.formatter = {
     lines.push("Thank you!");
     lines.push("Merit Dental");
 
+    return lines.join("\n");
+  },
+
+  /**
+   * Generates a Curve Dental data-entry cheat sheet.
+   * Organized field-by-field to match Curve's insurance screens
+   * so staff can tab through fields and paste values.
+   */
+  curveDataEntry(card) {
+    const lines = [];
+    const today = new Date().toLocaleDateString("en-US", {
+      month: "2-digit", day: "2-digit", year: "numeric",
+    });
+
+    lines.push(`CURVE DENTAL — INSURANCE ENTRY`);
+    lines.push(`Verified ${today}`);
+    lines.push("═".repeat(42));
+
+    // ── Plan tab ──
+    lines.push("");
+    lines.push("▸ PLAN INFO");
+    if (card.patientName)  lines.push(`  Patient:        ${card.patientName}`);
+    if (card.payer)        lines.push(`  Carrier:        ${card.payer}`);
+    if (card.planName)     lines.push(`  Plan Name:      ${card.planName}`);
+    if (card.planType)     lines.push(`  Plan Type:      ${card.planType}`);
+    if (card.groupNumber)  lines.push(`  Group #:        ${card.groupNumber}`);
+    if (card.subscriberId) lines.push(`  Subscriber ID:  ${card.subscriberId}`);
+    if (card.effective?.start) {
+      lines.push(`  Effective:      ${card.effective.start}${card.effective.end ? " – " + card.effective.end : ""}`);
+    }
+
+    // ── Financials tab ──
+    lines.push("");
+    lines.push("▸ DEDUCTIBLE / ANNUAL MAX");
+    const ded = card.deductible || {};
+    const max = card.annualMax || {};
+    lines.push(`  Ded Individual: ${ded.individual ? "$" + ded.individual : "—"}`);
+    lines.push(`  Ded Family:     ${ded.family ? "$" + ded.family : "—"}`);
+    if (ded.remaining) lines.push(`  Ded Remaining:  $${ded.remaining}`);
+    if (ded.appliesTo) lines.push(`  Ded Applies To: ${ded.appliesTo}`);
+    lines.push(`  Max Individual: ${max.individual ? "$" + max.individual : "—"}`);
+    lines.push(`  Max Family:     ${max.family ? "$" + max.family : "—"}`);
+    if (max.remaining) lines.push(`  Max Remaining:  $${max.remaining}`);
+
+    // ── Coverage table — quick-entry format ──
+    lines.push("");
+    lines.push("▸ COVERAGE %  (enter in Curve → Coverage tab)");
+
+    // Map CDT categories to Curve-friendly labels
+    const curveLabels = {
+      "Diagnostic":                  "Diagnostic (D0100-D0999)",
+      "Preventive":                  "Preventive (D1000-D1999)",
+      "Restorative":                 "Basic Restorative (D2000-D2399)",
+      "Crowns":                      "Major — Crowns (D2400-D2999)",
+      "Endodontics":                 "Major — Endo / RCT (D3000-D3999)",
+      "Periodontics":                "Perio (D4000-D4999)",
+      "Prosthodontics, Removable":   "Major — Dentures (D5000-D5899)",
+      "Maxillofacial Prosthetics":   "Maxillofacial (D5900-D5999)",
+      "Implant Services":            "Major — Implants (D6000-D6199)",
+      "Prosthodontics, Fixed":       "Major — Bridges (D6200-D6999)",
+      "Oral & Maxillofacial Surgery": "Oral Surgery (D7000-D7999)",
+      "Orthodontics":                "Ortho (D8000-D8999)",
+      "Adjunctive General Services": "Adjunctive (D9000-D9999)",
+    };
+
+    const covTable = card.coverageTable || [];
+    for (const row of covTable) {
+      const label = curveLabels[row.category] || `${row.category} (${row.cdtRange})`;
+      const pct = row.inNetwork !== null && row.inNetwork !== undefined
+        ? `${row.inNetwork}%`
+        : "—";
+      lines.push(`  ${label.padEnd(42)} ${pct}`);
+    }
+
+    // Exceptions
+    if (card.coverageExceptions?.length) {
+      lines.push("");
+      lines.push("▸ EXCEPTIONS  (different from category rate)");
+      for (const ex of card.coverageExceptions) {
+        const desc = ex.description || ex.cdtCodes;
+        lines.push(`  ${desc}: ${ex.inNetwork}%${ex.note ? " (" + ex.note + ")" : ""}`);
+      }
+    }
+
+    // ── Frequencies ──
+    const freq = card.frequencies || {};
+    const freqPairs = [
+      ["Prophy",   freq.prophy],
+      ["Exam",     freq.exam],
+      ["BWX",      freq.bwx],
+      ["FMX",      freq.fmx],
+      ["Pano",     freq.pano],
+      ["Fluoride", freq.fluoride],
+      ["Sealants", freq.sealants],
+    ].filter(([, v]) => v);
+
+    if (freqPairs.length) {
+      lines.push("");
+      lines.push("▸ FREQUENCIES  (enter in Curve → Frequency Limits)");
+      for (const [label, val] of freqPairs) {
+        lines.push(`  ${label.padEnd(12)} ${val}`);
+      }
+    }
+
+    // ── Waiting periods ──
+    if (card.waitingPeriods?.length) {
+      lines.push("");
+      lines.push("▸ WAITING PERIODS");
+      for (const wp of card.waitingPeriods) {
+        lines.push(`  ${wp.category}: ${wp.period}`);
+      }
+    }
+
+    // ── Notes ──
+    if (card.notes?.length) {
+      lines.push("");
+      lines.push("▸ NOTES / LIMITATIONS");
+      for (const n of card.notes) {
+        lines.push(`  • ${n}`);
+      }
+    }
+
+    lines.push("");
+    lines.push("═".repeat(42));
     return lines.join("\n");
   },
 

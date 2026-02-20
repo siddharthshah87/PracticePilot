@@ -35,6 +35,7 @@
         "shared/normalize.js",
         "shared/storage.js",
         "shared/formatter.js",
+        "shared/cdt-codes.js",
         "shared/llm-extractor.js",
         "content/page-detector.js",
         "content/eligibility-parser.js",

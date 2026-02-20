@@ -40,6 +40,12 @@
 
     // Wire up header collapse toggle
     panelEl.addEventListener("click", handlePanelClick);
+
+    // Wire CDT search if idle-state includes it (it won't, but guard)
+    const cdtInput = panelEl.querySelector(".pp-cdt-search");
+    if (cdtInput) {
+      cdtInput.addEventListener("input", handleCDTSearchInput);
+    }
   }
 
   function buildPanelHTML(state, extra = {}) {
@@ -115,6 +121,7 @@
             Tip: Select the eligibility response text first, then click "Capture Selection" for best results.
           </p>
         </div>
+        ${buildCDTLookupSection()}
       `;
     }
 
@@ -140,6 +147,7 @@
             Tip: On insurer portals, selecting just the benefits section works better than full page capture.
           </p>
         </div>
+        ${buildCDTLookupSection()}
       `;
     }
 
@@ -157,6 +165,7 @@
           </button>
         </div>
       </div>
+      ${buildCDTLookupSection()}
     `;
   }
 
@@ -239,6 +248,8 @@
       <div class="pp-section">
         <div class="pp-section-title">Plan Information</div>
         <div class="pp-data-grid">
+          ${card.patientName ? `<div class="pp-data-label">Patient</div><div class="pp-data-value" style="font-weight: 700;">${escapeHTML(card.patientName)}</div>` : ""}
+          ${card.subscriberId ? `<div class="pp-data-label">Subscriber ID</div><div class="pp-data-value">${escapeHTML(card.subscriberId)}</div>` : ""}
           ${card.payer ? `<div class="pp-data-label">Carrier</div><div class="pp-data-value">${escapeHTML(card.payer)}</div>` : ""}
           ${card.planName ? `<div class="pp-data-label">Plan</div><div class="pp-data-value">${escapeHTML(card.planName)}</div>` : ""}
           ${card.planType ? `<div class="pp-data-label">Type</div><div class="pp-data-value">${escapeHTML(card.planType)}</div>` : ""}
@@ -334,11 +345,24 @@
           <button class="pp-btn pp-btn-sm" data-action="copy-checklist" title="Copy staff checklist">
             ✅ Checklist
           </button>
+          <button class="pp-btn pp-btn-sm" data-action="copy-curve" title="Copy formatted for Curve Dental entry">
+            🖥️ Copy for Curve
+          </button>
           ${missingItems?.length ? `
             <button class="pp-btn pp-btn-sm" data-action="copy-patient-msg" title="Copy patient info request">
               ✉️ Patient Message
             </button>
           ` : ""}
+        </div>
+      </div>
+
+      <!-- CDT Code Lookup -->
+      <div class="pp-section">
+        <div class="pp-section-title">🦷 CDT Code Lookup</div>
+        <div class="pp-cdt-lookup">
+          <input type="text" class="pp-cdt-search" data-action="cdt-search" placeholder="Type code (D2740) or keyword (crown)…" autocomplete="off" />
+          <div class="pp-cdt-results" id="pp-cdt-results"></div>
+          <button class="pp-cdt-browse-btn" data-action="cdt-browse">Browse all codes by category</button>
         </div>
       </div>
 
@@ -421,6 +445,123 @@
         copyToClipboard(target, PP.formatter.patientInfoRequest(missing));
         break;
       }
+
+      case "copy-curve":
+        copyToClipboard(target, PP.formatter.curveDataEntry(currentCard));
+        break;
+
+      case "cdt-browse":
+        renderCDTBrowse();
+        break;
+
+      case "cdt-collapse": {
+        const container = panelEl?.querySelector("#pp-cdt-results");
+        if (container) container.innerHTML = "";
+        const btn = panelEl?.querySelector('[data-action="cdt-collapse"]');
+        if (btn) {
+          btn.textContent = "Browse all codes by category";
+          btn.dataset.action = "cdt-browse";
+        }
+        break;
+      }
+    }
+  }
+
+  // ── CDT Lookup Widget ─────────────────────────────────
+
+  /** Reusable HTML block for the CDT lookup section */
+  function buildCDTLookupSection() {
+    return `
+      <div class="pp-section">
+        <div class="pp-section-title">🦷 CDT Code Lookup</div>
+        <div class="pp-cdt-lookup">
+          <input type="text" class="pp-cdt-search" data-action="cdt-search" placeholder="Type code (D2740) or keyword (crown)…" autocomplete="off" />
+          <div class="pp-cdt-results" id="pp-cdt-results"></div>
+          <button class="pp-cdt-browse-btn" data-action="cdt-browse">Browse all codes by category</button>
+        </div>
+      </div>
+    `;
+  }
+
+  /** Debounced search handler — wired via input event */
+  let _cdtSearchTimer = null;
+
+  function handleCDTSearchInput(e) {
+    const query = e.target.value.trim();
+    clearTimeout(_cdtSearchTimer);
+    _cdtSearchTimer = setTimeout(() => renderCDTResults(query), 150);
+  }
+
+  /** Render search results in the CDT results container */
+  function renderCDTResults(query) {
+    const container = panelEl?.querySelector("#pp-cdt-results");
+    if (!container) return;
+
+    if (!query || query.length < 2) {
+      container.innerHTML = '<div class="pp-cdt-empty">Type at least 2 characters to search</div>';
+      return;
+    }
+
+    const results = PP.cdtCodes.search(query, 15);
+
+    if (!results.length) {
+      container.innerHTML = `<div class="pp-cdt-empty">No codes matching "${escapeHTML(query)}"</div>`;
+      return;
+    }
+
+    container.innerHTML = results.map(r => buildCDTItemHTML(r)).join("");
+  }
+
+  /** Build HTML for a single CDT result row */
+  function buildCDTItemHTML(entry) {
+    const cov = currentCard ? PP.cdtCodes.getCoverage(entry.code, currentCard) : null;
+    const covClass = cov === null ? "pp-cov-none"
+                   : cov >= 80   ? "pp-cov-high"
+                   : cov >= 50   ? "pp-cov-mid"
+                   :               "pp-cov-low";
+
+    const tierClass = `pp-tier-${entry.tier || "basic"}`;
+    const tierLabel = PP.cdtCodes.TIER_LABELS[entry.tier] || entry.tier || "";
+
+    return `
+      <div class="pp-cdt-item">
+        <div>
+          <span class="pp-cdt-code">${entry.code}</span>
+          <span class="pp-cdt-name">${escapeHTML(entry.aka || entry.name)}</span>
+        </div>
+        <div class="pp-cdt-meta">
+          <span class="pp-cdt-tier ${tierClass}">${escapeHTML(tierLabel)}</span>
+          <span>${escapeHTML(entry.category)} (${entry.cdtRange})</span>
+          ${cov !== null ? `<span class="pp-cdt-coverage ${covClass}">${cov}%</span>` : '<span class="pp-cdt-coverage pp-cov-none">—</span>'}
+        </div>
+        ${entry.note ? `<div class="pp-cdt-note">${escapeHTML(entry.note)}</div>` : ""}
+      </div>
+    `;
+  }
+
+  /** Browse all codes grouped by section */
+  function renderCDTBrowse() {
+    const container = panelEl?.querySelector("#pp-cdt-results");
+    if (!container) return;
+
+    const sections = PP.cdtCodes.getSections();
+    let html = "";
+
+    for (const section of sections) {
+      html += `<div class="pp-cdt-section-heading">${escapeHTML(section.heading)}</div>`;
+      for (const code of section.codes) {
+        const entry = PP.cdtCodes.lookup(code);
+        if (entry) html += buildCDTItemHTML({ code, ...entry });
+      }
+    }
+
+    container.innerHTML = html;
+
+    // Swap browse button to "collapse" mode
+    const browseBtn = panelEl?.querySelector('[data-action="cdt-browse"]');
+    if (browseBtn) {
+      browseBtn.textContent = "Collapse code list";
+      browseBtn.dataset.action = "cdt-collapse";
     }
   }
 
@@ -499,6 +640,12 @@
   function updatePanel(state, extra = {}) {
     if (!panelEl) return;
     panelEl.innerHTML = buildPanelHTML(state, extra);
+
+    // Wire CDT search input (if present in this state)
+    const cdtInput = panelEl.querySelector(".pp-cdt-search");
+    if (cdtInput) {
+      cdtInput.addEventListener("input", handleCDTSearchInput);
+    }
   }
 
   // ── Clipboard helper ────────────────────────────────────
