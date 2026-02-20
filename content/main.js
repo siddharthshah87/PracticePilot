@@ -580,8 +580,51 @@
 
   // ── Text Capture ────────────────────────────────────────
 
+  /**
+   * Capture page text with smart DOM targeting.
+   * Tries to grab only the eligibility content area, falling back
+   * to full body text if no specific container is found.
+   */
   function getPageText() {
-    return document.body?.innerText || "";
+    // Exclude our own PracticePilot panel from capture
+    const ppPanel = document.getElementById("pp-panel");
+
+    // Curve Dental eligibility pages: try specific content selectors
+    const contentSelectors = [
+      "#eligibility-response",
+      ".eligibility-response",
+      '[id*="eligibility"]',
+      "#content",
+      ".content-area",
+      "main",
+      '[role="main"]',
+      ".main-content",
+      "#main-content",
+    ];
+
+    for (const sel of contentSelectors) {
+      const el = document.querySelector(sel);
+      if (el && el.innerText && el.innerText.length > 100) {
+        return el.innerText;
+      }
+    }
+
+    // Fallback: grab body but exclude nav, sidebar, footer, and our panel
+    const excludeSelectors = [
+      "nav", "header", "footer",
+      '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]',
+      ".sidebar", "#sidebar", ".nav", ".navbar", ".footer",
+      ".header", "#header", "#footer",
+      "#pp-panel",  // our own panel
+    ];
+
+    // Clone body, remove excluded elements, get text
+    const clone = document.body.cloneNode(true);
+    for (const sel of excludeSelectors) {
+      clone.querySelectorAll(sel).forEach(el => el.remove());
+    }
+
+    return clone.innerText || document.body?.innerText || "";
   }
 
   function getSelectionText() {
