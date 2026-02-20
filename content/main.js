@@ -36,6 +36,7 @@
     panelEl = document.createElement("div");
     panelEl.id = "pp-panel";
     panelEl.innerHTML = buildPanelHTML("idle");
+    panelEl.style.display = "block";  // ensure visible
     document.body.appendChild(panelEl);
 
     // Wire up header collapse toggle
@@ -775,18 +776,24 @@
   // ── Initialize ──────────────────────────────────────────
 
   async function init() {
+    console.log("[PracticePilot] Initializing on:", window.location.href);
+
     // Create the panel
     createPanel();
+    console.log("[PracticePilot] Panel created. Visible:", panelEl?.offsetParent !== null);
 
     // Start page detection
     if (PP.pageDetector) {
       cleanupDetector = PP.pageDetector.watch((pageType) => {
         currentPageType = pageType;
+        console.log("[PracticePilot] Page type detected:", pageType);
         // Re-render panel idle state when page type changes
         if (!currentCard && !isExtracting) {
           updatePanel("idle");
         }
       });
+    } else {
+      console.warn("[PracticePilot] pageDetector not found!");
     }
 
     // Restore last card silently
@@ -795,16 +802,23 @@
     // ── Auto-extract on eligibility pages ────────────────
     // If we land on an eligibility page with enough text,
     // automatically extract so staff don't have to click.
-    if (currentPageType === PP.pageDetector?.PAGE_TYPES?.ELIGIBILITY) {
+    const isEligibility = currentPageType === PP.pageDetector?.PAGE_TYPES?.ELIGIBILITY;
+    console.log("[PracticePilot] Is eligibility page:", isEligibility, "| currentPageType:", currentPageType);
+
+    if (isEligibility) {
       const config = await PP.llmExtractor.getConfig();
+      console.log("[PracticePilot] API key present:", !!config.apiKey);
       if (config.apiKey) {
         // Small delay to let the page finish rendering
         setTimeout(() => {
           if (!currentCard && !isExtracting) {
-            console.log("[PracticePilot] Eligibility page detected — auto-extracting…");
+            console.log("[PracticePilot] Auto-extracting eligibility page…");
             captureAndExtract("page");
           }
         }, 1200);
+      } else {
+        console.log("[PracticePilot] No API key — showing no-key state");
+        updatePanel("no-key");
       }
     }
 

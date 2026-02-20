@@ -15,6 +15,7 @@ const CONTENT_SCRIPTS = [
   "shared/normalize.js",
   "shared/storage.js",
   "shared/formatter.js",
+  "shared/cdt-codes.js",
   "shared/llm-extractor.js",
   "content/page-detector.js",
   "content/eligibility-parser.js",
@@ -66,29 +67,35 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     // Popup wants to trigger extraction on the active tab
     case "PP_TRIGGER_EXTRACT":
-      chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      (async () => {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
         if (tabs[0]?.id) {
-          // Ensure scripts are injected first (no-op on Curve, needed for insurer portals)
           await ensureInjected(tabs[0].id);
-          chrome.tabs.sendMessage(tabs[0].id, {
-            type: "PP_EXTRACT",
-            mode: msg.mode || "page",
-          });
+          // Small delay to let scripts initialize if just injected
+          setTimeout(() => {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              type: "PP_EXTRACT",
+              mode: msg.mode || "page",
+            });
+          }, 500);
         }
-      });
+      })();
       sendResponse({ ok: true });
       break;
 
     // Popup wants to show/hide the panel on the active tab
     case "PP_TOGGLE_PANEL":
-      chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      (async () => {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
         if (tabs[0]?.id) {
           await ensureInjected(tabs[0].id);
-          chrome.tabs.sendMessage(tabs[0].id, {
-            type: msg.show ? "PP_SHOW_PANEL" : "PP_HIDE_PANEL",
-          });
+          setTimeout(() => {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              type: msg.show ? "PP_SHOW_PANEL" : "PP_HIDE_PANEL",
+            });
+          }, 500);
         }
-      });
+      })();
       sendResponse({ ok: true });
       break;
 
