@@ -35,6 +35,26 @@
   let urlPollInterval = null;   // setInterval ID for URL polling
   let domObserverRef = null;    // MutationObserver reference for cleanup
 
+  /** Check if the extension context is still valid */
+  function isContextValid() {
+    try {
+      // This will throw if the extension was reloaded/uninstalled
+      return !!chrome.runtime?.id;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /** Wrap any async operation — tears down if context is dead */
+  function guardContext() {
+    if (extensionDead) return false;
+    if (!isContextValid()) {
+      teardownEverything();
+      return false;
+    }
+    return true;
+  }
+
   // ── Panel DOM Creation ──────────────────────────────────
 
   function createPanel() {
@@ -530,7 +550,7 @@
 
   /** Handle chat send — calls Claude with patient context */
   async function handleChatSend() {
-    if (extensionDead) return;
+    if (!guardContext()) return;
     const input = panelEl?.querySelector("#pp-chat-input");
     const log = panelEl?.querySelector("#pp-chat-log");
     if (!input || !log) return;
@@ -648,7 +668,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
   // ── Patient view scan + action list ─────────────────────
 
   async function scanPatientAndShowActions() {
-    if (extensionDead) return;
+    if (!guardContext()) return;
     if (!PP.patientContext) return;
     if (isScanning) return; // prevent re-entrant calls
     isScanning = true;
@@ -722,10 +742,10 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
 
   /** Debounced re-scan — triggers 800ms after DOM settles */
   function schedulePatientRescan() {
-    if (extensionDead) return;
+    if (!guardContext()) return;
     if (actionScanTimer) clearTimeout(actionScanTimer);
     actionScanTimer = setTimeout(() => {
-      if (extensionDead) return;
+      if (!guardContext()) return;
       if (currentPageType === PP.pageDetector?.PAGE_TYPES?.PATIENT_VIEW) {
         scanPatientAndShowActions();
       }
@@ -1069,7 +1089,8 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
   }
 
   async function captureAndExtract(mode) {
-    if (extensionDead || isExtracting) return;
+    if (!guardContext()) return;
+    if (isExtracting) return;
 
     // Get text based on mode
     let rawText;
@@ -1280,6 +1301,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
   // ── Listen for messages from background / popup ─────────
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (!guardContext()) return;
     switch (msg.type) {
       case "PP_SHOW_PANEL":
         if (panelEl) {
@@ -1341,6 +1363,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
     // Start page detection
     if (PP.pageDetector) {
       cleanupDetector = PP.pageDetector.watch((pageType) => {
+        if (!guardContext()) return;
         const prevType = currentPageType;
         currentPageType = pageType;
         console.log("[PracticePilot] Page type detected:", pageType);
@@ -1357,7 +1380,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
       // Watch for DOM changes in patient view → re-scan on tab switches
       // IMPORTANT: ignore mutations inside our own panel to prevent infinite loops
       domObserverRef = new MutationObserver((mutations) => {
-        if (extensionDead || isUpdatingPanel) return;
+        if (!guardContext() || isUpdatingPanel) return;
         if (currentPageType !== PP.pageDetector?.PAGE_TYPES?.PATIENT_VIEW) return;
 
         // Check that at least one mutation is outside #pp-panel
@@ -1374,7 +1397,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
       // Also watch URL hash/path changes for SPA patient navigation
       let lastPatientUrl = window.location.href;
       urlPollInterval = setInterval(() => {
-        if (extensionDead) return;
+        if (!guardContext()) return;
         const currentUrl = window.location.href;
         if (currentUrl !== lastPatientUrl) {
           lastPatientUrl = currentUrl;
