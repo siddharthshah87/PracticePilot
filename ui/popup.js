@@ -23,6 +23,8 @@
     saveMsg:      document.getElementById("saveMsg"),
     statusDot:    document.getElementById("statusDot"),
     statusText:   document.getElementById("statusText"),
+    activateBtn:  document.getElementById("activateBtn"),
+    activateMsg:  document.getElementById("activateMsg"),
     showPanelBtn: document.getElementById("showPanelBtn"),
     extractBtn:   document.getElementById("extractBtn"),
     clearBtn:     document.getElementById("clearBtn"),
@@ -74,10 +76,14 @@
     // Check connection status
     checkStatus(config);
 
+    // Check current tab status (is PracticePilot injected?)
+    checkTabStatus();
+
     // Wire events
     els.provider.addEventListener("change", onProviderChange);
     els.saveBtn.addEventListener("click", onSave);
     els.testBtn.addEventListener("click", onTest);
+    els.activateBtn.addEventListener("click", onActivate);
     els.showPanelBtn.addEventListener("click", onShowPanel);
     els.extractBtn.addEventListener("click", onExtract);
     els.clearBtn.addEventListener("click", onClear);
@@ -175,6 +181,59 @@
   function onExtract() {
     chrome.runtime.sendMessage({ type: "PP_TRIGGER_EXTRACT", mode: "page" });
     window.close();
+  }
+
+  async function onActivate() {
+    els.activateBtn.disabled = true;
+    const original = els.activateBtn.innerHTML;
+    els.activateBtn.innerHTML = '<span class="spinner"></span> Injecting…';
+
+    try {
+      const result = await chrome.runtime.sendMessage({ type: "PP_INJECT_AND_SHOW" });
+      if (result?.ok) {
+        els.activateBtn.style.display = "none";
+        showActivateMsg("success", "PracticePilot activated! Select eligibility text and extract.");
+        // Also show the panel
+        setTimeout(() => {
+          chrome.runtime.sendMessage({ type: "PP_TOGGLE_PANEL", show: true });
+        }, 300);
+      } else {
+        showActivateMsg("error", "Couldn't activate: " + (result?.error || "Unknown error"));
+      }
+    } catch (e) {
+      showActivateMsg("error", "Activation failed: " + e.message);
+    } finally {
+      els.activateBtn.disabled = false;
+      els.activateBtn.innerHTML = original;
+    }
+  }
+
+  async function checkTabStatus() {
+    try {
+      const status = await chrome.runtime.sendMessage({ type: "PP_GET_TAB_STATUS" });
+
+      if (status && !status.injected) {
+        // Content script not injected — show activate button
+        els.activateBtn.style.display = "";
+
+        if (status.isInsurerPortal) {
+          els.activateBtn.textContent = "🚀 Activate on Insurance Portal";
+        } else {
+          els.activateBtn.textContent = "🚀 Activate on This Page";
+        }
+      } else {
+        els.activateBtn.style.display = "none";
+      }
+    } catch (e) {
+      // Can't reach background — probably no active tab
+    }
+  }
+
+  function showActivateMsg(type, text) {
+    els.activateMsg.className = "msg " + type;
+    els.activateMsg.textContent = text;
+    els.activateMsg.style.display = "block";
+    setTimeout(() => { els.activateMsg.style.display = "none"; }, 4000);
   }
 
   async function onClear() {

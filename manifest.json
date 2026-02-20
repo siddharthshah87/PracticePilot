@@ -10,7 +10,8 @@
   },
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "scripting"
   ],
   "host_permissions": [
     "https://*.curvedental.com/*"
@@ -46,7 +47,7 @@
   "web_accessible_resources": [
     {
       "resources": ["icons/*"],
-      "matches": ["https://*.curvedental.com/*"]
+      "matches": ["<all_urls>"]
     }
   ]
 }

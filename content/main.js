@@ -4,7 +4,8 @@
 // Ties together page detection, text capture, LLM extraction,
 // and the sidebar panel UI. This is the glue.
 //
-// Loaded on curvedental.com pages after all shared modules.
+// Auto-loaded on curvedental.com. Injected on-demand on
+// insurance company portals (Humana, Cigna, etc.).
 // ============================================================
 
 (function () {
@@ -89,6 +90,8 @@
 
   function buildIdleBody() {
     const isEligibility = currentPageType === PP.pageDetector.PAGE_TYPES.ELIGIBILITY;
+    const isInsurerPortal = currentPageType === PP.pageDetector.PAGE_TYPES.INSURER_PORTAL;
+    const insurerName = PP.pageDetector.getInsurerName?.() || null;
 
     if (isEligibility) {
       return `
@@ -115,17 +118,42 @@
       `;
     }
 
+    if (isInsurerPortal) {
+      return `
+        <div class="pp-capture-bar">
+          <span class="pp-capture-text">🏥 ${insurerName ? insurerName + " portal" : "Insurance portal"} detected</span>
+        </div>
+        <div class="pp-section" style="margin-top: 12px;">
+          <div class="pp-section-title">Extract Benefits</div>
+          <p style="font-size: 12px; color: var(--pp-gray-500); margin: 0 0 10px;">
+            Navigate to the eligibility/benefits page, then select the benefit details and click extract.
+          </p>
+          <div class="pp-btn-group">
+            <button class="pp-btn pp-btn-primary" data-action="capture-selection">
+              ✂️ Capture Selection
+            </button>
+            <button class="pp-btn" data-action="capture-page">
+              📄 Capture Full Page
+            </button>
+          </div>
+          <p style="font-size: 11px; color: var(--pp-gray-500); margin: 8px 0 0;">
+            Tip: On insurer portals, selecting just the benefits section works better than full page capture.
+          </p>
+        </div>
+      `;
+    }
+
     return `
       <div class="pp-empty">
         <div class="pp-empty-icon">🦷</div>
         <p><strong>PracticePilot</strong></p>
-        <p>Navigate to an eligibility/benefits page in Curve to extract insurance data.</p>
+        <p>Navigate to an eligibility page in Curve or an insurance company portal to extract benefits.</p>
         <div class="pp-btn-group" style="justify-content: center; margin-top: 12px;">
-          <button class="pp-btn" data-action="capture-page">
-            📄 Capture This Page
-          </button>
           <button class="pp-btn" data-action="capture-selection">
             ✂️ Capture Selection
+          </button>
+          <button class="pp-btn" data-action="capture-page">
+            📄 Capture This Page
           </button>
         </div>
       </div>
@@ -529,6 +557,7 @@
     const labels = {
       [PP.pageDetector.PAGE_TYPES.ELIGIBILITY]: "Eligibility",
       [PP.pageDetector.PAGE_TYPES.INSURANCE_MODAL]: "Insurance",
+      [PP.pageDetector.PAGE_TYPES.INSURER_PORTAL]: PP.pageDetector.getInsurerName?.() || "Insurer Portal",
       [PP.pageDetector.PAGE_TYPES.SCHEDULE]: "Schedule",
       [PP.pageDetector.PAGE_TYPES.PATIENT_CHART]: "Patient",
       [PP.pageDetector.PAGE_TYPES.CLAIMS]: "Claims",
@@ -570,7 +599,12 @@
           pageType: currentPageType,
           hasCard: !!currentCard,
           isExtracting,
+          injected: true,
         });
+        break;
+
+      case "PP_PING":
+        sendResponse({ ok: true, injected: true });
         break;
     }
 
