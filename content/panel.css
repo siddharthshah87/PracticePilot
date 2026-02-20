@@ -506,3 +506,76 @@
 .pp-collapsed .pp-caret {
   transform: rotate(180deg);
 }
+
+/* ── Cache bar / indicator ─────────────────────────────── */
+
+.pp-cache-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 0 -12px 8px;
+  background: var(--pp-blue-light);
+  border-bottom: 1px solid rgba(37, 99, 235, 0.15);
+  font-size: 12px;
+}
+
+.pp-cache-bar.pp-cache-stale {
+  background: var(--pp-amber-bg);
+  border-bottom-color: rgba(217, 119, 6, 0.2);
+}
+
+.pp-cache-label {
+  color: var(--pp-gray-700);
+  flex: 1;
+  line-height: 1.4;
+}
+
+.pp-cache-stale .pp-cache-label {
+  color: var(--pp-amber);
+  font-weight: 600;
+}
+
+.pp-btn-refresh {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Recent patients list ──────────────────────────────── */
+
+.pp-recent-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.pp-recent-item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  margin: 0 -4px;
+  border-radius: var(--pp-radius-sm);
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--pp-gray-100);
+}
+
+.pp-recent-item:hover {
+  background: var(--pp-blue-light);
+}
+
+.pp-recent-item:active {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.pp-recent-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pp-gray-900);
+}
+
+.pp-recent-detail {
+  font-size: 11px;
+  color: var(--pp-gray-500);
+  margin-top: 2px;
+}

@@ -24,6 +24,7 @@
   let currentPageType = null;
   let isExtracting = false;
   let cleanupDetector = null;
+  let cardFromCache = false;    // true when showing a cached (not fresh) card
 
   // ── Panel DOM Creation ──────────────────────────────────
 
@@ -62,7 +63,7 @@
         bodyContent = buildExtractingBody();
         break;
       case "result":
-        bodyContent = buildResultBody(extra.card, extra.missingItems);
+        bodyContent = buildResultBody(extra.card, extra.missingItems, extra);
         break;
       case "error":
         bodyContent = buildErrorBody(extra.error);
@@ -166,6 +167,12 @@
           </button>
         </div>
       </div>
+      <div class="pp-section">
+        <div class="pp-section-title">📂 Recent Patients</div>
+        <div id="pp-recent-patients" class="pp-recent-list">
+          <p style="font-size: 12px; color: var(--pp-gray-500);">Loading…</p>
+        </div>
+      </div>
       ${buildCDTLookupSection()}
     `;
   }
@@ -182,7 +189,7 @@
     `;
   }
 
-  function buildResultBody(card, missingItems) {
+  function buildResultBody(card, missingItems, extra = {}) {
     if (!card) return buildIdleBody();
 
     const note = PP.formatter.verificationNote(card);
@@ -194,6 +201,25 @@
       medium: '<span class="pp-badge pp-badge-amber">Medium Confidence</span>',
       low: '<span class="pp-badge pp-badge-red">Low Confidence</span>',
     }[confidence] || "";
+
+    // Cache indicator
+    let cacheBar = "";
+    if (extra.cached) {
+      const cachedDate = extra.cachedAt
+        ? new Date(extra.cachedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : "unknown date";
+      const isStale = (extra.ageDays || 0) > 30;
+      cacheBar = `
+        <div class="pp-cache-bar ${isStale ? "pp-cache-stale" : ""}">
+          <span class="pp-cache-label">
+            ${isStale ? "⚠️" : "💾"} Loaded from cache — saved ${cachedDate}${isStale ? " (over 30 days old)" : ""}
+          </span>
+          <button class="pp-btn pp-btn-sm pp-btn-refresh" data-action="capture-page" title="Re-extract fresh data from page">
+            🔄 Re-extract
+          </button>
+        </div>
+      `;
+    }
 
     // Coverage table rows
     const covRows = (card.coverageTable || [])
@@ -234,6 +260,9 @@
       : "";
 
     return `
+      <!-- Cache indicator -->
+      ${cacheBar}
+
       <!-- Summary bar -->
       <div class="pp-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -634,6 +663,67 @@
 
   // ── Extraction pipeline ─────────────────────────────────
 
+  /**
+   * Try to load a cached card for the current page's patient.
+   * Returns true if a cached card was loaded, false otherwise.
+   */
+  async function tryLoadFromCache() {
+    try {
+      const rawText = getPageText();
+      if (!rawText || rawText.length < 50) return false;
+
+      const patientName = PP.phiRedactor.extractPatientName(rawText);
+      const subscriberId = PP.phiRedactor.extractSubscriberId(rawText);
+
+      if (!patientName && !subscriberId) return false;
+
+      // Try to detect payer from page text (simple heuristic)
+      const payerHint = extractPayerHint(rawText);
+
+      const cacheKey = PP.storage.cacheKeyFromIdentifiers(patientName, subscriberId, payerHint);
+      if (!cacheKey) return false;
+
+      const cached = await PP.storage.getCachedCard(cacheKey);
+      if (!cached) return false;
+
+      // Check age — cards older than 30 days get a warning but still load
+      const ageMs = Date.now() - new Date(cached.cachedAt).getTime();
+      const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+
+      currentCard = cached.card;
+      cardFromCache = true;
+      const missingItems = PP.normalize.missingItems(currentCard);
+      updatePanel("result", {
+        card: currentCard,
+        missingItems,
+        cached: true,
+        cachedAt: cached.cachedAt,
+        ageDays,
+      });
+
+      console.log(`[PracticePilot] Loaded cached card for "${patientName || subscriberId}" (${ageDays} days old)`);
+      return true;
+    } catch (e) {
+      console.warn("[PracticePilot] Cache lookup failed:", e);
+      return false;
+    }
+  }
+
+  /**
+   * Try to extract payer name from raw page text (heuristic).
+   */
+  function extractPayerHint(text) {
+    const patterns = [
+      /(?:Carrier|Payer|Insurance\s*(?:Company|Carrier)?)\s*:\s*([^\n]+)/i,
+      /(?:Payor)\s*:\s*([^\n]+)/i,
+    ];
+    for (const p of patterns) {
+      const m = text.match(p);
+      if (m?.[1]) return m[1].trim();
+    }
+    return null;
+  }
+
   async function captureAndExtract(mode) {
     if (isExtracting) return;
 
@@ -667,13 +757,17 @@
     try {
       const result = await PP.llmExtractor.extract(rawText);
       currentCard = result.card;
+      cardFromCache = false;
 
-      // Save to local storage
+      // Save to local storage (last card + history)
       await PP.storage.setLastBenefitCard(currentCard);
+
+      // Save to patient-keyed cache for instant reload next time
+      await PP.storage.cacheCard(currentCard);
 
       // Show results
       const missingItems = PP.normalize.missingItems(currentCard);
-      updatePanel("result", { card: currentCard, missingItems });
+      updatePanel("result", { card: currentCard, missingItems, cached: false });
 
       // Notify background
       chrome.runtime.sendMessage({
@@ -854,17 +948,20 @@
     // Restore last card silently
     await restoreLastCard();
 
-    // ── Auto-extract on eligibility pages ────────────────
-    // If we land on an eligibility page with enough text,
-    // automatically extract so staff don't have to click.
+    // ── Auto-load from cache or extract on eligibility pages ──
     const isEligibility = currentPageType === PP.pageDetector?.PAGE_TYPES?.ELIGIBILITY;
     console.log("[PracticePilot] Is eligibility page:", isEligibility, "| currentPageType:", currentPageType);
 
     if (isEligibility) {
       const config = await PP.llmExtractor.getConfig();
       console.log("[PracticePilot] API key present:", !!config.apiKey);
-      if (config.apiKey) {
-        // Small delay to let the page finish rendering
+
+      // First try loading from patient cache (instant, no API call)
+      const cachedLoaded = await tryLoadFromCache();
+      if (cachedLoaded) {
+        console.log("[PracticePilot] Showing cached card — no API call needed");
+      } else if (config.apiKey) {
+        // No cache hit — auto-extract from page
         setTimeout(() => {
           if (!currentCard && !isExtracting) {
             console.log("[PracticePilot] Auto-extracting eligibility page…");
