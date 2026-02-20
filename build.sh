@@ -58,6 +58,8 @@ REQUIRED_FILES=(
   "shared/formatter.js"
   "shared/cdt-codes.js"
   "shared/llm-extractor.js"
+  "shared/patient-context.js"
+  "shared/action-engine.js"
   "ui/popup.html"
   "ui/popup.js"
 )

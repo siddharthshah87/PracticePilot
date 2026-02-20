@@ -25,6 +25,8 @@
   let isExtracting = false;
   let cleanupDetector = null;
   let cardFromCache = false;    // true when showing a cached (not fresh) card
+  let currentPatientCtx = null; // patient context built incrementally
+  let actionScanTimer = null;   // debounce for DOM change scans
 
   // ── Panel DOM Creation ──────────────────────────────────
 
@@ -70,6 +72,9 @@
         break;
       case "no-key":
         bodyContent = buildNoKeyBody();
+        break;
+      case "actions":
+        bodyContent = buildActionsBody(extra.ctx, extra.actions);
         break;
       default:
         bodyContent = buildIdleBody();
@@ -431,6 +436,140 @@
     `;
   }
 
+  // ── Actions body (patient view) ─────────────────────────
+
+  function buildActionsBody(ctx, actions) {
+    if (!ctx) return buildIdleBody();
+
+    const name = escapeHTML(ctx.patientName || "Patient");
+    const scannedTabs = ctx.tabsScanned.map(t => t.charAt(0).toUpperCase() + t.slice(1));
+    const scannedLabel = scannedTabs.length
+      ? scannedTabs.join(", ")
+      : "none yet";
+
+    const priorityClasses = {
+      1: "pp-action-critical",
+      2: "pp-action-action",
+      3: "pp-action-recommended",
+      4: "pp-action-info",
+    };
+
+    const actionItems = (actions || []).map(a => `
+      <div class="pp-action-item ${priorityClasses[a.priority] || ""}">
+        <span class="pp-action-icon">${a.icon}</span>
+        <div class="pp-action-content">
+          <div class="pp-action-title">${escapeHTML(a.title)}</div>
+          <div class="pp-action-detail">${escapeHTML(a.detail)}</div>
+        </div>
+      </div>
+    `).join("");
+
+    const noActions = !actions?.length
+      ? '<p style="font-size: 12px; color: var(--pp-gray-500); text-align: center; padding: 8px 0;">Open more tabs to build action list…</p>'
+      : "";
+
+    // If we have a cached benefit card for this patient, show a link
+    let benefitLink = "";
+    if (currentCard && currentCard.patientName?.toLowerCase() === ctx.patientName?.toLowerCase()) {
+      benefitLink = `
+        <div class="pp-section" style="border-top: 1px solid var(--pp-gray-200); padding-top: 8px;">
+          <button class="pp-btn pp-btn-sm pp-btn-primary" data-action="show-benefits" style="width: 100%;">
+            📋 View Cached Benefits Breakdown
+          </button>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="pp-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <div class="pp-section-title" style="margin: 0;">📋 ${name}</div>
+          <button class="pp-btn pp-btn-sm" data-action="rescan-patient" title="Re-scan page">🔄</button>
+        </div>
+        <div class="pp-scanned-tabs">
+          Scanned: ${escapeHTML(scannedLabel)}
+        </div>
+      </div>
+
+      <div class="pp-section">
+        <div class="pp-section-title">Action List</div>
+        <div class="pp-actions-list">
+          ${actionItems}
+          ${noActions}
+        </div>
+      </div>
+
+      ${benefitLink}
+
+      <!-- Quick actions -->
+      <div class="pp-section">
+        <div class="pp-section-title">Quick Actions</div>
+        <div class="pp-btn-group">
+          <button class="pp-btn pp-btn-sm" data-action="capture-page" title="Extract eligibility from this page">
+            📄 Extract Eligibility
+          </button>
+          <button class="pp-btn pp-btn-sm" data-action="capture-selection" title="Extract from selected text">
+            ✂️ From Selection
+          </button>
+        </div>
+      </div>
+
+      ${buildCDTLookupSection()}
+    `;
+  }
+
+  // ── Patient view scan + action list ─────────────────────
+
+  async function scanPatientAndShowActions() {
+    if (!PP.patientContext) return;
+
+    const pageText = getPageText();
+    if (!pageText || pageText.length < 50) return;
+
+    try {
+      const ctx = await PP.patientContext.scanAndMerge(pageText);
+      if (!ctx) return;
+
+      currentPatientCtx = ctx;
+
+      // Look up cached benefit card for this patient
+      let benefitCard = null;
+      if (currentCard && currentCard.patientName?.toLowerCase() === ctx.patientName?.toLowerCase()) {
+        benefitCard = currentCard;
+      } else {
+        // Try loading from cache
+        const cacheKey = PP.storage.cacheKeyFromIdentifiers(
+          ctx.patientName,
+          null,
+          ctx.insurance.carrier
+        );
+        const cached = await PP.storage.getCachedCard(cacheKey);
+        if (cached) {
+          benefitCard = cached.card;
+          currentCard = cached.card;
+          cardFromCache = true;
+        }
+      }
+
+      // Generate actions
+      const actions = PP.actionEngine.generate(ctx, benefitCard);
+
+      updatePanel("actions", { ctx, actions });
+    } catch (e) {
+      console.warn("[PracticePilot] Patient scan error:", e);
+    }
+  }
+
+  /** Debounced re-scan — triggers 800ms after DOM settles */
+  function schedulePatientRescan() {
+    if (actionScanTimer) clearTimeout(actionScanTimer);
+    actionScanTimer = setTimeout(() => {
+      if (currentPageType === PP.pageDetector?.PAGE_TYPES?.PATIENT_VIEW) {
+        scanPatientAndShowActions();
+      }
+    }, 800);
+  }
+
   // ── Event handling ──────────────────────────────────────
 
   function handlePanelClick(e) {
@@ -494,6 +633,47 @@
         }
         break;
       }
+
+      case "load-cached": {
+        const idx = parseInt(target.closest("[data-cache-index]")?.dataset?.cacheIndex, 10);
+        const recentContainer = panelEl?.querySelector("#pp-recent-patients");
+        const cachedCards = recentContainer?._cachedCards;
+        if (cachedCards && cachedCards[idx]) {
+          const entry = cachedCards[idx];
+          currentCard = entry.card;
+          cardFromCache = true;
+          const ageMs = Date.now() - new Date(entry.cachedAt).getTime();
+          const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+          const missingItems = PP.normalize.missingItems(currentCard);
+          updatePanel("result", {
+            card: currentCard,
+            missingItems,
+            cached: true,
+            cachedAt: entry.cachedAt,
+            ageDays,
+          });
+          showToast(`Loaded saved benefits for ${currentCard.patientName || "patient"}`);
+        }
+        break;
+      }
+
+      case "clear-cache":
+        PP.storage.clearCardCache().then(() => {
+          showToast("All cached patient data cleared");
+          if (!currentCard) updatePanel("idle");
+        });
+        break;
+
+      case "rescan-patient":
+        scanPatientAndShowActions();
+        break;
+
+      case "show-benefits":
+        if (currentCard) {
+          const missingItems = PP.normalize.missingItems(currentCard);
+          updatePanel("result", { card: currentCard, missingItems, cached: cardFromCache });
+        }
+        break;
     }
   }
 
@@ -791,6 +971,51 @@
     if (!panelEl) return;
     panelEl.innerHTML = buildPanelHTML(state, extra);
 
+    // Populate recent patients list (async, non-blocking)
+    const recentContainer = panelEl.querySelector("#pp-recent-patients");
+    if (recentContainer) {
+      loadRecentPatients(recentContainer);
+    }
+  }
+
+  // ── Recent Patients ─────────────────────────────────────
+
+  async function loadRecentPatients(container) {
+    try {
+      const cached = await PP.storage.getAllCachedCards();
+      if (!cached.length) {
+        container.innerHTML = '<p style="font-size: 12px; color: var(--pp-gray-500);">No saved patients yet. Extract a patient\'s benefits to save them here.</p>';
+        return;
+      }
+
+      // Show up to 10 most recent
+      const items = cached.slice(0, 10).map((entry, i) => {
+        const card = entry.card;
+        const name = card.patientName || "Unknown Patient";
+        const payer = card.payer || "Unknown Carrier";
+        const date = new Date(entry.cachedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        const planType = card.planType || "";
+
+        return `
+          <div class="pp-recent-item" data-action="load-cached" data-cache-index="${i}" title="Click to load ${escapeHTML(name)}">
+            <div class="pp-recent-name">${escapeHTML(name)}</div>
+            <div class="pp-recent-detail">${escapeHTML(payer)}${planType ? " · " + escapeHTML(planType) : ""} · ${date}</div>
+          </div>
+        `;
+      }).join("");
+
+      const clearBtn = cached.length > 0
+        ? '<button class="pp-btn pp-btn-sm" data-action="clear-cache" style="margin-top: 8px; font-size: 11px;">🗑️ Clear All Cached</button>'
+        : "";
+
+      container.innerHTML = items + clearBtn;
+
+      // Store reference for click handler
+      container._cachedCards = cached;
+    } catch (e) {
+      container.innerHTML = '<p style="font-size: 12px; color: var(--pp-gray-500);">Could not load recent patients.</p>';
+    }
+
     // Wire CDT search input (if present in this state)
     const cdtInput = panelEl.querySelector(".pp-cdt-search");
     if (cdtInput) {
@@ -855,6 +1080,7 @@
       [PP.pageDetector.PAGE_TYPES.ELIGIBILITY]: "Eligibility",
       [PP.pageDetector.PAGE_TYPES.INSURANCE_MODAL]: "Insurance",
       [PP.pageDetector.PAGE_TYPES.INSURER_PORTAL]: PP.pageDetector.getInsurerName?.() || "Insurer Portal",
+      [PP.pageDetector.PAGE_TYPES.PATIENT_VIEW]: "Patient",
       [PP.pageDetector.PAGE_TYPES.SCHEDULE]: "Schedule",
       [PP.pageDetector.PAGE_TYPES.PATIENT_CHART]: "Patient",
       [PP.pageDetector.PAGE_TYPES.CLAIMS]: "Claims",
@@ -934,13 +1160,27 @@
     // Start page detection
     if (PP.pageDetector) {
       cleanupDetector = PP.pageDetector.watch((pageType) => {
+        const prevType = currentPageType;
         currentPageType = pageType;
         console.log("[PracticePilot] Page type detected:", pageType);
-        // Re-render panel idle state when page type changes
-        if (!currentCard && !isExtracting) {
+
+        if (pageType === PP.pageDetector.PAGE_TYPES.PATIENT_VIEW) {
+          // Patient view — scan and show action list
+          scanPatientAndShowActions();
+        } else if (!currentCard && !isExtracting) {
+          // Re-render panel idle state when page type changes
           updatePanel("idle");
         }
       });
+
+      // Watch for DOM changes in patient view → re-scan on tab switches
+      const domObserver = new MutationObserver(() => {
+        if (currentPageType === PP.pageDetector?.PAGE_TYPES?.PATIENT_VIEW) {
+          schedulePatientRescan();
+        }
+      });
+      domObserver.observe(document.body, { childList: true, subtree: true });
+
     } else {
       console.warn("[PracticePilot] pageDetector not found!");
     }
@@ -950,9 +1190,13 @@
 
     // ── Auto-load from cache or extract on eligibility pages ──
     const isEligibility = currentPageType === PP.pageDetector?.PAGE_TYPES?.ELIGIBILITY;
-    console.log("[PracticePilot] Is eligibility page:", isEligibility, "| currentPageType:", currentPageType);
+    const isPatientView = currentPageType === PP.pageDetector?.PAGE_TYPES?.PATIENT_VIEW;
+    console.log("[PracticePilot] Is eligibility page:", isEligibility, "| isPatientView:", isPatientView, "| currentPageType:", currentPageType);
 
-    if (isEligibility) {
+    if (isPatientView) {
+      // Patient view — auto-scan for action list
+      scanPatientAndShowActions();
+    } else if (isEligibility) {
       const config = await PP.llmExtractor.getConfig();
       console.log("[PracticePilot] API key present:", !!config.apiKey);
 

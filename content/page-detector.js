@@ -15,6 +15,7 @@ PracticePilot.pageDetector = {
     ELIGIBILITY:      "eligibility",
     INSURANCE_MODAL:  "insurance_modal",
     INSURER_PORTAL:   "insurer_portal",
+    PATIENT_VIEW:     "patient_view",
     SCHEDULE:         "schedule",
     PATIENT_CHART:    "patient_chart",
     CLAIMS:           "claims",
@@ -56,7 +57,12 @@ PracticePilot.pageDetector = {
       return this.PAGE_TYPES.INSURER_PORTAL;
     }
 
-    // 4. Daily schedule (Curve)
+    // 4. Patient view (Curve sidebar with patient tabs open)
+    if (this._isPatientView(url, bodyText)) {
+      return this.PAGE_TYPES.PATIENT_VIEW;
+    }
+
+    // 5. Daily schedule (Curve)
     if (this._isSchedulePage(url, bodyText)) {
       return this.PAGE_TYPES.SCHEDULE;
     }
@@ -112,6 +118,14 @@ PracticePilot.pageDetector = {
   _isSchedulePage(url, text) {
     if (/schedule|appointment|calendar/i.test(url)) return true;
     return text.includes("Today's Schedule") || text.includes("Appointment List");
+  },
+
+  _isPatientView(url, text) {
+    // Curve shows a sidebar with patient name + these tabs when a patient is loaded
+    const patientTabs = ["Profile", "Insurance", "Claims", "Billing", "Recare", "Charting", "Perio Charting"];
+    const tabHits = patientTabs.filter(t => text.includes(t)).length;
+    // Need at least 4 of these tabs visible to confirm patient view
+    return tabHits >= 4 && url.includes("curvehero.com");
   },
 
   _isPatientChart(url, text) {

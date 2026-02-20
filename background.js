@@ -16,6 +16,8 @@ const CONTENT_SCRIPTS = [
   "shared/storage.js",
   "shared/formatter.js",
   "shared/cdt-codes.js",
+  "shared/patient-context.js",
+  "shared/action-engine.js",
   "shared/llm-extractor.js",
   "content/page-detector.js",
   "content/eligibility-parser.js",

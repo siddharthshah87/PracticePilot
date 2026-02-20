@@ -579,3 +579,90 @@
   color: var(--pp-gray-500);
   margin-top: 2px;
 }
+
+/* ── Action list (patient view) ────────────────────────── */
+
+.pp-scanned-tabs {
+  font-size: 11px;
+  color: var(--pp-gray-500);
+  margin-top: 4px;
+}
+
+.pp-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pp-action-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--pp-radius-sm);
+  background: var(--pp-gray-50);
+  border-left: 3px solid var(--pp-gray-300);
+  transition: background 0.15s;
+}
+
+.pp-action-item:hover {
+  background: var(--pp-gray-100);
+}
+
+.pp-action-critical {
+  border-left-color: var(--pp-red);
+  background: var(--pp-red-bg);
+}
+
+.pp-action-critical:hover {
+  background: #fde2e2;
+}
+
+.pp-action-action {
+  border-left-color: var(--pp-amber);
+  background: var(--pp-amber-bg);
+}
+
+.pp-action-action:hover {
+  background: #fef3cd;
+}
+
+.pp-action-recommended {
+  border-left-color: var(--pp-blue);
+  background: var(--pp-blue-light);
+}
+
+.pp-action-recommended:hover {
+  background: #dbeafe;
+}
+
+.pp-action-info {
+  border-left-color: var(--pp-gray-300);
+  background: var(--pp-gray-50);
+}
+
+.pp-action-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  line-height: 1.2;
+  margin-top: 1px;
+}
+
+.pp-action-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.pp-action-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pp-gray-900);
+  line-height: 1.3;
+}
+
+.pp-action-detail {
+  font-size: 11px;
+  color: var(--pp-gray-500);
+  margin-top: 2px;
+  line-height: 1.4;
+}
