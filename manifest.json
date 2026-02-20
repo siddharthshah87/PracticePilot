@@ -1,0 +1,52 @@
+{
+  "name": "PracticePilot",
+  "version": "0.1.0",
+  "manifest_version": 3,
+  "description": "In-page benefits breakdown assistant for dental practice management. Read-only guidance + copy helpers for eligibility and insurance workflows.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*.curvedental.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "PracticePilot",
+    "default_popup": "ui/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.curvedental.com/*"],
+      "js": [
+        "shared/phi-redactor.js",
+        "shared/normalize.js",
+        "shared/storage.js",
+        "shared/formatter.js",
+        "shared/llm-extractor.js",
+        "content/page-detector.js",
+        "content/eligibility-parser.js",
+        "content/main.js"
+      ],
+      "css": ["content/panel.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": ["https://*.curvedental.com/*"]
+    }
+  ]
+}

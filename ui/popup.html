@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PracticePilot Settings</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 360px;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      color: #111827;
+      background: #fff;
+    }
+
+    /* Header */
+    .header {
+      background: #2563EB;
+      color: #fff;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-icon {
+      width: 28px;
+      height: 28px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .header h1 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .header .version {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-left: auto;
+    }
+
+    /* Status bar */
+    .status-bar {
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      border-bottom: 1px solid #E5E7EB;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot.connected { background: #059669; }
+    .status-dot.disconnected { background: #DC2626; }
+    .status-dot.unknown { background: #D97706; }
+
+    /* Content */
+    .content {
+      padding: 16px 18px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6B7280;
+      margin-bottom: 8px;
+    }
+
+    /* Form fields */
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #D1D5DB;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #111827;
+      background: #F9FAFB;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      outline: none;
+      border-color: #2563EB;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .field input[type="password"] {
+      font-family: monospace;
+      letter-spacing: 1px;
+    }
+
+    .field .hint {
+      font-size: 11px;
+      color: #6B7280;
+      margin-top: 3px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border: 1px solid #D1D5DB;
+      border-radius: 6px;
+      background: #fff;
+      color: #374151;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      background: #F3F4F6;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: #2563EB;
+      color: #fff;
+      border-color: #2563EB;
+    }
+
+    .btn-primary:hover {
+      background: #1D4ED8;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Result message */
+    .msg {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .msg.success {
+      display: block;
+      background: #ECFDF5;
+      color: #059669;
+      border: 1px solid #A7F3D0;
+    }
+
+    .msg.error {
+      display: block;
+      background: #FEF2F2;
+      color: #DC2626;
+      border: 1px solid #FECACA;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 12px 18px;
+      border-top: 1px solid #E5E7EB;
+      text-align: center;
+      font-size: 11px;
+      color: #9CA3AF;
+    }
+
+    .footer a {
+      color: #2563EB;
+      text-decoration: none;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top: 2px solid #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .btn .spinner {
+      border-color: rgba(37,99,235,0.2);
+      border-top-color: #2563EB;
+    }
+
+    .btn-primary .spinner {
+      border-color: rgba(255,255,255,0.3);
+      border-top-color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon">PP</div>
+    <h1>PracticePilot</h1>
+    <span class="version" id="version">v0.1.0</span>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <span class="status-dot unknown" id="statusDot"></span>
+    <span id="statusText">Checking connection…</span>
+  </div>
+
+  <div class="content">
+
+    <!-- API Configuration -->
+    <div class="section">
+      <div class="section-title">API Configuration</div>
+
+      <div class="field">
+        <label for="provider">LLM Provider</label>
+        <select id="provider">
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai">OpenAI</option>
+          <option value="custom">Custom (OpenAI-compatible)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="apiKey">API Key</label>
+        <input type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off">
+        <div class="hint">Your key is stored locally and never sent to any server except the LLM provider.</div>
+      </div>
+
+      <div class="field">
+        <label for="model">Model</label>
+        <input type="text" id="model" placeholder="claude-sonnet-4-20250514">
+        <div class="hint">Default: claude-sonnet-4-20250514 (~$0.04/extraction)</div>
+      </div>
+
+      <div class="field" id="baseUrlField" style="display: none;">
+        <label for="baseUrl">Base URL</label>
+        <input type="text" id="baseUrl" placeholder="https://api.openai.com/v1">
+        <div class="hint">Only needed for custom OpenAI-compatible providers.</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="saveBtn">💾 Save Settings</button>
+        <button class="btn" id="testBtn">🔌 Test Connection</button>
+      </div>
+
+      <div class="msg" id="saveMsg"></div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section">
+      <div class="section-title">Quick Actions</div>
+      <div class="btn-row">
+        <button class="btn" id="showPanelBtn">📋 Show Panel</button>
+        <button class="btn" id="extractBtn">🔍 Extract Now</button>
+        <button class="btn" id="clearBtn">🗑️ Clear History</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    PracticePilot for Merit Dental &middot; PHI never stored remotely
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
