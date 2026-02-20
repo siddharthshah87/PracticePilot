@@ -792,6 +792,22 @@
     // Restore last card silently
     await restoreLastCard();
 
+    // ── Auto-extract on eligibility pages ────────────────
+    // If we land on an eligibility page with enough text,
+    // automatically extract so staff don't have to click.
+    if (currentPageType === PP.pageDetector?.PAGE_TYPES?.ELIGIBILITY) {
+      const config = await PP.llmExtractor.getConfig();
+      if (config.apiKey) {
+        // Small delay to let the page finish rendering
+        setTimeout(() => {
+          if (!currentCard && !isExtracting) {
+            console.log("[PracticePilot] Eligibility page detected — auto-extracting…");
+            captureAndExtract("page");
+          }
+        }, 1200);
+      }
+    }
+
     console.log("[PracticePilot] Content script initialized. Page type:", currentPageType);
   }
 
