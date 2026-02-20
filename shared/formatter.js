@@ -4,7 +4,7 @@
 // Generates copy-ready text blocks from a BenefitCard.
 // ============================================================
 
-const PracticePilot = window.PracticePilot || {};
+var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.formatter = {
 

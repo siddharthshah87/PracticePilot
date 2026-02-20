@@ -5,7 +5,7 @@
 // No PHI is stored — only task metadata, hashed refs, and cards.
 // ============================================================
 
-const PracticePilot = window.PracticePilot || {};
+var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.storage = {
 

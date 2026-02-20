@@ -17,7 +17,7 @@
 // (Humana vs Cigna vs Delta vs MetLife etc.)
 // ============================================================
 
-const PracticePilot = window.PracticePilot || {};
+var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.llmExtractor = {
 

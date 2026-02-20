@@ -14,7 +14,7 @@
 // targeted selectors for higher accuracy.
 // ============================================================
 
-const PracticePilot = window.PracticePilot || {};
+var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.eligibilityParser = {
 

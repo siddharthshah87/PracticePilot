@@ -5,7 +5,7 @@
 // object that the rest of the extension consumes.
 // ============================================================
 
-const PracticePilot = window.PracticePilot || {};
+var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.normalize = {
 

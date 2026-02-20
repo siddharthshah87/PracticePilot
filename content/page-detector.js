@@ -6,7 +6,7 @@
 // Returns a page type string used to activate the right behavior.
 // ============================================================
 
-const PracticePilot = window.PracticePilot || {};
+var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.pageDetector = {
 
