@@ -28,6 +28,14 @@
   let currentPatientCtx = null; // patient context built incrementally
   let actionScanTimer = null;   // debounce for DOM change scans
 
+  // ── Drag-to-move state ──────────────────────────────────
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragPanelStartX = 0;
+  let dragPanelStartY = 0;
+  const DRAG_THRESHOLD = 5; // px moved before it counts as drag (vs click)
+
   // ── Panel DOM Creation ──────────────────────────────────
 
   function createPanel() {
@@ -42,8 +50,9 @@
     panelEl.style.display = "block";  // ensure visible
     document.body.appendChild(panelEl);
 
-    // Wire up header collapse toggle
+    // Wire up header collapse toggle + drag-to-move
     panelEl.addEventListener("click", handlePanelClick);
+    initDrag();
 
     // Wire CDT search if idle-state includes it (it won't, but guard)
     const cdtInput = panelEl.querySelector(".pp-cdt-search");
@@ -571,6 +580,78 @@
   }
 
   // ── Event handling ──────────────────────────────────────
+
+  // ── Drag-to-move ────────────────────────────────────────
+
+  function initDrag() {
+    const header = panelEl.querySelector(".pp-header");
+    if (!header) return;
+
+    header.addEventListener("mousedown", onDragStart);
+    document.addEventListener("mousemove", onDragMove);
+    document.addEventListener("mouseup", onDragEnd);
+  }
+
+  function onDragStart(e) {
+    // Only left click, ignore buttons inside header
+    if (e.button !== 0) return;
+    if (e.target.closest(".pp-header-btn")) return;
+
+    isDragging = false; // will become true if mouse moves past threshold
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+
+    const rect = panelEl.getBoundingClientRect();
+    dragPanelStartX = rect.left;
+    dragPanelStartY = rect.top;
+
+    panelEl.classList.add("pp-dragging");
+    e.preventDefault();
+  }
+
+  function onDragMove(e) {
+    if (!panelEl.classList.contains("pp-dragging")) return;
+
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+
+    if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+      isDragging = true;
+      // Switch from right-anchored to left-anchored positioning
+      panelEl.style.right = "auto";
+    }
+
+    if (!isDragging) return;
+
+    // Calculate new position, clamp to viewport
+    let newLeft = dragPanelStartX + dx;
+    let newTop  = dragPanelStartY + dy;
+
+    const pw = panelEl.offsetWidth;
+    const ph = panelEl.offsetHeight;
+    newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - pw));
+    newTop  = Math.max(0, Math.min(newTop, window.innerHeight - 48)); // keep header visible
+
+    panelEl.style.left = newLeft + "px";
+    panelEl.style.top  = newTop  + "px";
+  }
+
+  function onDragEnd() {
+    if (!panelEl.classList.contains("pp-dragging")) return;
+    panelEl.classList.remove("pp-dragging");
+
+    // If it was a real drag, suppress the click that follows mouseup
+    if (isDragging) {
+      panelEl.addEventListener("click", suppressClick, true);
+    }
+    isDragging = false;
+  }
+
+  function suppressClick(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    panelEl.removeEventListener("click", suppressClick, true);
+  }
 
   function handlePanelClick(e) {
     const target = e.target.closest("[data-action]");
