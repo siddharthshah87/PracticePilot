@@ -41,7 +41,16 @@ PracticePilot.pageDetector = {
    */
   detect() {
     const url = window.location.href.toLowerCase();
-    const bodyText = document.body?.innerText || "";
+    // Exclude our own panel from page text to avoid false positives
+    const ppPanel = document.getElementById("pp-panel");
+    let bodyText;
+    if (ppPanel) {
+      ppPanel.style.display = "none";
+      bodyText = document.body?.innerText || "";
+      ppPanel.style.display = "";
+    } else {
+      bodyText = document.body?.innerText || "";
+    }
 
     // 1. Eligibility / Benefits page (Curve or any site)
     if (this._isEligibilityPage(url, bodyText)) {
@@ -192,7 +201,13 @@ PracticePilot.pageDetector = {
     callback(lastType);
 
     // MutationObserver for SPA navigation (modals opening, content changes)
-    const observer = new MutationObserver(() => {
+    // Skip mutations caused by our own panel to avoid re-detect loops
+    const observer = new MutationObserver((mutations) => {
+      const isOwnPanel = mutations.every(m =>
+        m.target.id === "pp-panel" || m.target.closest?.("#pp-panel")
+      );
+      if (isOwnPanel) return;
+
       const newType = this.detect();
       if (newType !== lastType) {
         lastType = newType;

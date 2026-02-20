@@ -736,12 +736,15 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
 
   function onDragStart(e) {
     // Only trigger on the header area, not body content
-    if (!e.target.closest(".pp-header")) return;
+    const header = e.target.closest(".pp-header");
+    if (!header) return;
     // Only left click, ignore buttons inside header
     if (e.button !== 0) return;
     if (e.target.closest(".pp-header-btn")) return;
 
-    isDragging = false; // will become true if mouse moves past threshold
+    // Mark drag as "pending" — will become true if mouse moves past threshold
+    isDragging = false;
+    panelEl._dragPending = true;
     dragStartX = e.clientX;
     dragStartY = e.clientY;
 
@@ -751,6 +754,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
 
     panelEl.classList.add("pp-dragging");
     e.preventDefault();
+    e.stopPropagation();
   }
 
   function onDragMove(e) {
@@ -783,6 +787,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
   function onDragEnd() {
     if (!panelEl.classList.contains("pp-dragging")) return;
     panelEl.classList.remove("pp-dragging");
+    panelEl._dragPending = false;
 
     // If it was a real drag, suppress the click that follows mouseup
     if (isDragging) {
@@ -798,6 +803,9 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
   }
 
   function handlePanelClick(e) {
+    // If we just finished a drag attempt (mousedown on header), don't toggle
+    if (panelEl._dragPending) return;
+
     const target = e.target.closest("[data-action]");
     if (!target) return;
 
@@ -1425,13 +1433,24 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
         // Check that at least one mutation is outside #pp-panel
         const isExternal = mutations.some(m => {
           const node = m.target;
-          return node && !node.closest?.("#pp-panel");
+          return node && node.id !== "pp-panel" && !node.closest?.("#pp-panel");
         });
         if (isExternal) {
           schedulePatientRescan();
         }
       });
       domObserver.observe(document.body, { childList: true, subtree: true });
+
+      // Also watch URL hash/path changes for SPA patient navigation
+      let lastPatientUrl = window.location.href;
+      setInterval(() => {
+        const currentUrl = window.location.href;
+        if (currentUrl !== lastPatientUrl) {
+          lastPatientUrl = currentUrl;
+          console.log("[PracticePilot] URL changed, re-scanning...");
+          schedulePatientRescan();
+        }
+      }, 1000);
 
     } else {
       console.warn("[PracticePilot] pageDetector not found!");
