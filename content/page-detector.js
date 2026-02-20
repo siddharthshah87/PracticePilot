@@ -75,8 +75,8 @@ PracticePilot.pageDetector = {
   },
 
   _isEligibilityPage(url, text) {
-    // URL heuristics
-    if (/eligib|e&b|benefit.*check|benefit.*inquiry/i.test(url)) return true;
+    // URL heuristics (Curve uses /eligibility_response/get/)
+    if (/eligib|e&b|benefit.*check|benefit.*inquiry|eligibility_response/i.test(url)) return true;
 
     // DOM heuristics — look for eligibility-specific content
     const markers = [

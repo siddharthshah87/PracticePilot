@@ -208,7 +208,7 @@ function isSupportedPage(url) {
   if (!url) return false;
   try {
     const hostname = new URL(url).hostname.toLowerCase();
-    return hostname.includes("curvedental.com") || INSURER_DOMAINS.some(d => hostname.includes(d));
+    return hostname.includes("curvehero.com") || INSURER_DOMAINS.some(d => hostname.includes(d));
   } catch {
     return false;
   }
@@ -283,7 +283,7 @@ async function handleTestConnection(config) {
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   try {
     const tab = await chrome.tabs.get(tabId);
-    if (tab.url && tab.url.includes("curvedental.com")) {
+    if (tab.url && tab.url.includes("curvehero.com")) {
       chrome.action.setBadgeText({ text: "●", tabId });
       chrome.action.setBadgeBackgroundColor({ color: "#2563EB", tabId });
     } else if (isInsurerPortal(tab.url)) {
@@ -299,7 +299,7 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.url) {
-    if (tab.url.includes("curvedental.com")) {
+    if (tab.url.includes("curvehero.com")) {
       chrome.action.setBadgeText({ text: "●", tabId });
       chrome.action.setBadgeBackgroundColor({ color: "#2563EB", tabId });
     } else if (isInsurerPortal(tab.url)) {

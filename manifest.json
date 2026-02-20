@@ -14,7 +14,7 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://*.curvedental.com/*"
+    "https://*.curvehero.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -29,7 +29,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://*.curvedental.com/*"],
+      "matches": ["https://*.curvehero.com/*"],
       "js": [
         "shared/phi-redactor.js",
         "shared/normalize.js",

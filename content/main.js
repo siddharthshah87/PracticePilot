@@ -4,7 +4,7 @@
 // Ties together page detection, text capture, LLM extraction,
 // and the sidebar panel UI. This is the glue.
 //
-// Auto-loaded on curvedental.com. Injected on-demand on
+// Auto-loaded on curvehero.com (Curve Dental). Injected on-demand on
 // insurance company portals (Humana, Cigna, etc.).
 // ============================================================
 
