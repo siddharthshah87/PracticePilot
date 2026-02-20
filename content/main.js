@@ -29,6 +29,8 @@
   let actionScanTimer = null;   // debounce for DOM change scans
   let lastPatientName = null;   // detect patient switches
   let isChatting = false;       // prevent concurrent chat calls
+  let isScanning = false;       // prevent re-entrant patient scans
+  let isUpdatingPanel = false;  // suppress observer during our own DOM writes
 
   // ── Drag-to-move state ──────────────────────────────────
   let isDragging = false;
@@ -653,9 +655,11 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
 
   async function scanPatientAndShowActions() {
     if (!PP.patientContext) return;
+    if (isScanning) return; // prevent re-entrant calls
+    isScanning = true;
 
     const pageText = getPageText();
-    if (!pageText || pageText.length < 50) return;
+    if (!pageText || pageText.length < 50) { isScanning = false; return; }
 
     try {
       // Quick-check: did the patient change?
@@ -697,7 +701,15 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
 
       updatePanel("actions", { ctx, actions });
     } catch (e) {
+      // "Extension context invalidated" = extension was reloaded; stop gracefully
+      if (/context invalidated/i.test(e.message)) {
+        console.log("[PracticePilot] Extension reloaded — stopping old content script.");
+        if (actionScanTimer) clearTimeout(actionScanTimer);
+        return;
+      }
       console.warn("[PracticePilot] Patient scan error:", e);
+    } finally {
+      isScanning = false;
     }
   }
 
@@ -716,15 +728,15 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
   // ── Drag-to-move ────────────────────────────────────────
 
   function initDrag() {
-    const header = panelEl.querySelector(".pp-header");
-    if (!header) return;
-
-    header.addEventListener("mousedown", onDragStart);
+    // Use panelEl (stable) instead of header (replaced on re-render)
+    panelEl.addEventListener("mousedown", onDragStart);
     document.addEventListener("mousemove", onDragMove);
     document.addEventListener("mouseup", onDragEnd);
   }
 
   function onDragStart(e) {
+    // Only trigger on the header area, not body content
+    if (!e.target.closest(".pp-header")) return;
     // Only left click, ignore buttons inside header
     if (e.button !== 0) return;
     if (e.target.closest(".pp-header-btn")) return;
@@ -1186,7 +1198,10 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
 
   function updatePanel(state, extra = {}) {
     if (!panelEl) return;
+    isUpdatingPanel = true;
     panelEl.innerHTML = buildPanelHTML(state, extra);
+    // Allow microtasks to settle before re-enabling observer
+    requestAnimationFrame(() => { isUpdatingPanel = false; });
 
     // Populate recent patients list (async, non-blocking)
     const recentContainer = panelEl.querySelector("#pp-recent-patients");
@@ -1402,8 +1417,17 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
       });
 
       // Watch for DOM changes in patient view → re-scan on tab switches
-      const domObserver = new MutationObserver(() => {
-        if (currentPageType === PP.pageDetector?.PAGE_TYPES?.PATIENT_VIEW) {
+      // IMPORTANT: ignore mutations inside our own panel to prevent infinite loops
+      const domObserver = new MutationObserver((mutations) => {
+        if (isUpdatingPanel) return; // our own panel write — skip
+        if (currentPageType !== PP.pageDetector?.PAGE_TYPES?.PATIENT_VIEW) return;
+
+        // Check that at least one mutation is outside #pp-panel
+        const isExternal = mutations.some(m => {
+          const node = m.target;
+          return node && !node.closest?.("#pp-panel");
+        });
+        if (isExternal) {
           schedulePatientRescan();
         }
       });
