@@ -472,12 +472,18 @@
 
   /** Reusable HTML block for the CDT lookup section */
   function buildCDTLookupSection() {
+    // Pre-render starred codes so they show immediately
+    const starred = PP.cdtCodes?.starredCodes?.() || [];
+    const starredHTML = starred.map(r => buildCDTItemHTML(r)).join("");
+
     return `
       <div class="pp-section">
         <div class="pp-section-title">🦷 CDT Code Lookup</div>
         <div class="pp-cdt-lookup">
           <input type="text" class="pp-cdt-search" data-action="cdt-search" placeholder="Type code (D2740) or keyword (crown)…" autocomplete="off" />
-          <div class="pp-cdt-results" id="pp-cdt-results"></div>
+          <div class="pp-cdt-results" id="pp-cdt-results">
+            ${starredHTML ? `<div class="pp-cdt-section-heading">⭐ Common Codes</div>${starredHTML}` : ""}
+          </div>
           <button class="pp-cdt-browse-btn" data-action="cdt-browse">Browse all codes by category</button>
         </div>
       </div>
@@ -499,7 +505,12 @@
     if (!container) return;
 
     if (!query || query.length < 2) {
-      container.innerHTML = '<div class="pp-cdt-empty">Type at least 2 characters to search</div>';
+      // Show starred codes when search is cleared
+      const starred = PP.cdtCodes?.starredCodes?.() || [];
+      const starredHTML = starred.map(r => buildCDTItemHTML(r)).join("");
+      container.innerHTML = starredHTML
+        ? `<div class="pp-cdt-section-heading">⭐ Common Codes</div>${starredHTML}`
+        : '<div class="pp-cdt-empty">Type at least 2 characters to search</div>';
       return;
     }
 
@@ -523,12 +534,13 @@
 
     const tierClass = `pp-tier-${entry.tier || "basic"}`;
     const tierLabel = PP.cdtCodes.TIER_LABELS[entry.tier] || entry.tier || "";
+    const starIcon = entry.starred ? '⭐ ' : '';
 
     return `
-      <div class="pp-cdt-item">
+      <div class="pp-cdt-item${entry.starred ? ' pp-cdt-starred' : ''}">
         <div>
           <span class="pp-cdt-code">${entry.code}</span>
-          <span class="pp-cdt-name">${escapeHTML(entry.aka || entry.name)}</span>
+          <span class="pp-cdt-name">${starIcon}${escapeHTML(entry.aka || entry.name)}</span>
         </div>
         <div class="pp-cdt-meta">
           <span class="pp-cdt-tier ${tierClass}">${escapeHTML(tierLabel)}</span>

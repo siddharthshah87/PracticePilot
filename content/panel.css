@@ -433,6 +433,16 @@
   margin-top: 2px;
 }
 
+.pp-cdt-starred {
+  border-left: 3px solid #f59e0b;
+  padding-left: 5px;
+}
+
+.pp-cdt-starred .pp-cdt-note {
+  color: var(--pp-gray-700);
+  font-weight: 500;
+}
+
 .pp-cdt-tier {
   display: inline-block;
   padding: 1px 5px;

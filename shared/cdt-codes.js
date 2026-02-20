@@ -26,14 +26,16 @@ PracticePilot.cdtCodes = (() => {
       category: "Diagnostic",
       cdtRange: "D0100-D0999",
       tier: "preventive",
+      starred: true,
     },
     D0150: {
       name: "Comprehensive Oral Evaluation",
       aka: "Comp Exam",
-      note: "Done only with new patients or when a patient has new insurance.",
+      note: "New patients or when patient has new insurance. Check frequency limits.",
       category: "Diagnostic",
       cdtRange: "D0100-D0999",
       tier: "preventive",
+      starred: true,
     },
     D0140: {
       name: "Limited Oral Evaluation — Problem Focused",
@@ -48,10 +50,11 @@ PracticePilot.cdtCodes = (() => {
     D0210: {
       name: "Intraoral — Complete Series",
       aka: "Full Mouth X-rays (FMX)",
-      note: "Total of 18 x-rays showing the full mouth including roots.",
+      note: "18 x-rays showing full mouth + roots. Usually covered 1x every 3-5 years.",
       category: "Diagnostic",
       cdtRange: "D0100-D0999",
       tier: "preventive",
+      starred: true,
     },
     D0220: {
       name: "Intraoral — Periapical First Film",
@@ -88,10 +91,11 @@ PracticePilot.cdtCodes = (() => {
     D0274: {
       name: "Bitewings — Four Films",
       aka: "BWX (4 films)",
-      note: "Four bitewing radiographs — standard recall set.",
+      note: "Standard recall set. Check BWX frequency — usually 1x/year or 2x/year.",
       category: "Diagnostic",
       cdtRange: "D0100-D0999",
       tier: "preventive",
+      starred: true,
     },
     D0330: {
       name: "Panoramic Radiographic Image",
@@ -106,10 +110,11 @@ PracticePilot.cdtCodes = (() => {
     D1206: {
       name: "Topical Application of Fluoride Varnish",
       aka: "Fluoride Varnish",
-      note: "Applied after cleaning.",
+      note: "Applied after cleaning. ⚠️ Check age limits — some plans restrict to under 16/19. Verify coverage for adults.",
       category: "Preventive",
       cdtRange: "D1000-D1999",
       tier: "preventive",
+      starred: true,
     },
     D1208: {
       name: "Topical Application of Fluoride",
@@ -132,10 +137,11 @@ PracticePilot.cdtCodes = (() => {
     D1110: {
       name: "Prophylaxis — Adult",
       aka: "Adult Prophy",
-      note: "Cleaning for patients over age 14.",
+      note: "Cleaning for patients over age 14. Check frequency — usually 2x/year.",
       category: "Preventive",
       cdtRange: "D1000-D1999",
       tier: "preventive",
+      starred: true,
     },
 
     // ─── Amalgam (Silver Fillings) ──────────────────────
@@ -244,10 +250,11 @@ PracticePilot.cdtCodes = (() => {
     D2740: {
       name: "Crown — Porcelain/Ceramic Substrate",
       aka: "Porcelain/Ceramic Crown (No Metal)",
-      note: "No metal substrate.",
+      note: "No metal substrate. Most common crown type. Check waiting periods.",
       category: "Crowns",
       cdtRange: "D2400-D2999",
       tier: "major",
+      starred: true,
     },
     D2750: {
       name: "Crown — Porcelain Fused to High Noble Metal",
@@ -276,10 +283,11 @@ PracticePilot.cdtCodes = (() => {
     D2950: {
       name: "Core Buildup, Including Any Pins",
       aka: "Core Build-Up (BU)",
-      note: "Typically done with a crown.",
+      note: "Typically done with a crown. Usually billed same visit as crown.",
       category: "Crowns",
       cdtRange: "D2400-D2999",
       tier: "major",
+      starred: true,
     },
     D2952: {
       name: "Post and Core in Addition to Crown",
@@ -318,10 +326,11 @@ PracticePilot.cdtCodes = (() => {
     D3330: {
       name: "Endodontic Therapy, Molar Tooth",
       aka: "Molar RCT",
-      note: "Teeth #1-3, #14-16 (upper) / #17-19, #30-32 (lower). Crown + BU needed after.",
+      note: "Teeth #1-3, #14-16 / #17-19, #30-32. ⚠️ Crown + BU needed after — quote together.",
       category: "Endodontics",
       cdtRange: "D3000-D3999",
       tier: "major",
+      starred: true,
     },
     D3346: {
       name: "Retreatment of Previous Root Canal — Anterior",
@@ -352,10 +361,11 @@ PracticePilot.cdtCodes = (() => {
     D4341: {
       name: "Periodontal Scaling and Root Planing — 4+ Teeth Per Quadrant",
       aka: "SRP (4+ teeth)",
-      note: "Scaling and root planing, 4 or more teeth per quadrant.",
+      note: "4 or more teeth per quadrant. Check if plan requires perio charting first.",
       category: "Periodontics",
       cdtRange: "D4000-D4999",
       tier: "basic",
+      starred: true,
     },
     D4342: {
       name: "Periodontal Scaling and Root Planing — 1-3 Teeth Per Quadrant",
@@ -376,10 +386,11 @@ PracticePilot.cdtCodes = (() => {
     D4910: {
       name: "Periodontal Maintenance",
       aka: "Perio Maint / PM",
-      note: "Periodic maintenance following periodontal therapy.",
+      note: "Following perio therapy. ⚠️ Replaces regular prophy — different frequency rules.",
       category: "Periodontics",
       cdtRange: "D4000-D4999",
       tier: "basic",
+      starred: true,
     },
     D4381: {
       name: "Localized Delivery of Antimicrobial Agents",
@@ -528,10 +539,11 @@ PracticePilot.cdtCodes = (() => {
     D7140: {
       name: "Extraction, Erupted Tooth or Exposed Root",
       aka: "Simple Extraction",
-      note: "Elevation and/or forceps removal of erupted tooth.",
+      note: "Forceps removal. Check if bone graft (D7953) needed for ridge preservation.",
       category: "Oral & Maxillofacial Surgery",
       cdtRange: "D7000-D7999",
       tier: "basic",
+      starred: true,
     },
     D7210: {
       name: "Extraction, Erupted Tooth Requiring Removal of Bone/Sectioning",
@@ -580,10 +592,11 @@ PracticePilot.cdtCodes = (() => {
     D9944: {
       name: "Occlusal Guard — Hard Appliance, Full Arch",
       aka: "NightGuard",
-      note: "Hard appliance, full arch — usually upper. For bruxism/grinding.",
+      note: "⚠️ Usually upper arch. Check if plan covers — many plans exclude or limit to 1 per lifetime. May require prior auth.",
       category: "Adjunctive General Services",
       cdtRange: "D9000-D9999",
       tier: "major",
+      starred: true,
     },
     D9951: {
       name: "Occlusal Adjustment — Limited",
@@ -766,6 +779,15 @@ PracticePilot.cdtCodes = (() => {
     return SECTIONS;
   }
 
+  /**
+   * Return starred/commonly-used codes as an array of { code, ...entry }.
+   */
+  function starredCodes() {
+    return Object.entries(CODES)
+      .filter(([, entry]) => entry.starred)
+      .map(([code, entry]) => ({ code, ...entry }));
+  }
+
   return {
     lookup,
     search,
@@ -773,6 +795,7 @@ PracticePilot.cdtCodes = (() => {
     getCoverageSummary,
     allCodes,
     getSections,
+    starredCodes,
     TIER_LABELS,
   };
 
