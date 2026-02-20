@@ -11,6 +11,7 @@
 //   - Flag gaps, risks, and missing setup
 // ============================================================
 
+(function() {
 var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.actionEngine = {
@@ -269,3 +270,4 @@ PracticePilot.actionEngine = {
 };
 
 window.PracticePilot = PracticePilot;
+})();

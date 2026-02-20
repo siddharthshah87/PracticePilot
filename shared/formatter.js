@@ -4,6 +4,7 @@
 // Generates copy-ready text blocks from a BenefitCard.
 // ============================================================
 
+(function() {
 var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.formatter = {
@@ -341,3 +342,4 @@ PracticePilot.formatter = {
 };
 
 window.PracticePilot = PracticePilot;
+})();

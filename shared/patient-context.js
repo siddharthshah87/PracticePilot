@@ -12,6 +12,7 @@
 //   4. Context cached — persists across page loads
 // ============================================================
 
+(function() {
 var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.patientContext = {
@@ -309,3 +310,4 @@ PracticePilot.patientContext = {
 };
 
 window.PracticePilot = PracticePilot;
+})();

@@ -5,6 +5,7 @@
 // object that the rest of the extension consumes.
 // ============================================================
 
+(function() {
 var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.normalize = {
@@ -135,3 +136,4 @@ PracticePilot.normalize = {
 };
 
 window.PracticePilot = PracticePilot;
+})();

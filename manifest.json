@@ -30,6 +30,7 @@
   "content_scripts": [
     {
       "matches": ["https://*.curvehero.com/*"],
+      "exclude_matches": ["https://*.sso.curvehero.com/*"],
       "js": [
         "shared/phi-redactor.js",
         "shared/normalize.js",

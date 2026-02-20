@@ -21,6 +21,7 @@
 //   - Service types
 // ============================================================
 
+(function() {
 var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.phiRedactor = {
@@ -183,3 +184,4 @@ PracticePilot.phiRedactor = {
 };
 
 window.PracticePilot = PracticePilot;
+})();

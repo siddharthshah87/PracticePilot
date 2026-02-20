@@ -6,6 +6,7 @@
 // Returns a page type string used to activate the right behavior.
 // ============================================================
 
+(function() {
 var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.pageDetector = {
@@ -226,3 +227,4 @@ PracticePilot.pageDetector = {
 };
 
 window.PracticePilot = PracticePilot;
+})();

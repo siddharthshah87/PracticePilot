@@ -14,6 +14,7 @@
 // targeted selectors for higher accuracy.
 // ============================================================
 
+(function() {
 var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.eligibilityParser = {
@@ -304,3 +305,4 @@ PracticePilot.eligibilityParser = {
 };
 
 window.PracticePilot = PracticePilot;
+})();

@@ -10,6 +10,7 @@
 // Source: Merit Dental internal reference sheet.
 // ============================================================
 
+(function() {
 var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.cdtCodes = (() => {
@@ -802,3 +803,4 @@ PracticePilot.cdtCodes = (() => {
 })();
 
 window.PracticePilot = PracticePilot;
+})();

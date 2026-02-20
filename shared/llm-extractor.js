@@ -17,6 +17,7 @@
 // (Humana vs Cigna vs Delta vs MetLife etc.)
 // ============================================================
 
+(function() {
 var PracticePilot = window.PracticePilot || {};
 
 PracticePilot.llmExtractor = {
@@ -538,3 +539,4 @@ Return the JSON object now.`;
 };
 
 window.PracticePilot = PracticePilot;
+})();
