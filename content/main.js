@@ -27,6 +27,8 @@
   let cardFromCache = false;    // true when showing a cached (not fresh) card
   let currentPatientCtx = null; // patient context built incrementally
   let actionScanTimer = null;   // debounce for DOM change scans
+  let lastPatientName = null;   // detect patient switches
+  let isChatting = false;       // prevent concurrent chat calls
 
   // ── Drag-to-move state ──────────────────────────────────
   let isDragging = false;
@@ -463,7 +465,11 @@
       4: "pp-action-info",
     };
 
-    const actionItems = (actions || []).map(a => `
+    // Only show CRITICAL and ACTION items up front; collapse lesser items
+    const critical = (actions || []).filter(a => a.priority <= 2);
+    const other = (actions || []).filter(a => a.priority > 2);
+
+    const renderItem = (a) => `
       <div class="pp-action-item ${priorityClasses[a.priority] || ""}">
         <span class="pp-action-icon">${a.icon}</span>
         <div class="pp-action-content">
@@ -471,22 +477,21 @@
           <div class="pp-action-detail">${escapeHTML(a.detail)}</div>
         </div>
       </div>
-    `).join("");
+    `;
+
+    const criticalHTML = critical.map(renderItem).join("");
+    const otherHTML = other.length
+      ? `<details class="pp-action-more"><summary>${other.length} more suggestion${other.length > 1 ? "s" : ""}…</summary>${other.map(renderItem).join("")}</details>`
+      : "";
 
     const noActions = !actions?.length
       ? '<p style="font-size: 12px; color: var(--pp-gray-500); text-align: center; padding: 8px 0;">Open more tabs to build action list…</p>'
       : "";
 
-    // If we have a cached benefit card for this patient, show a link
+    // Benefit card link (compact)
     let benefitLink = "";
     if (currentCard && currentCard.patientName?.toLowerCase() === ctx.patientName?.toLowerCase()) {
-      benefitLink = `
-        <div class="pp-section" style="border-top: 1px solid var(--pp-gray-200); padding-top: 8px;">
-          <button class="pp-btn pp-btn-sm pp-btn-primary" data-action="show-benefits" style="width: 100%;">
-            📋 View Cached Benefits Breakdown
-          </button>
-        </div>
-      `;
+      benefitLink = `<button class="pp-btn pp-btn-sm pp-btn-primary" data-action="show-benefits" style="width: 100%; margin-top: 6px;">📋 View Benefits</button>`;
     }
 
     return `
@@ -501,30 +506,147 @@
       </div>
 
       <div class="pp-section">
-        <div class="pp-section-title">Action List</div>
         <div class="pp-actions-list">
-          ${actionItems}
+          ${criticalHTML}
+          ${otherHTML}
           ${noActions}
         </div>
+        ${benefitLink}
       </div>
 
-      ${benefitLink}
+      ${buildChatSection()}
+    `;
+  }
 
-      <!-- Quick actions -->
-      <div class="pp-section">
-        <div class="pp-section-title">Quick Actions</div>
-        <div class="pp-btn-group">
-          <button class="pp-btn pp-btn-sm" data-action="capture-page" title="Extract eligibility from this page">
-            📄 Extract Eligibility
-          </button>
-          <button class="pp-btn pp-btn-sm" data-action="capture-selection" title="Extract from selected text">
-            ✂️ From Selection
-          </button>
+  // ── Chat section (ask anything, rarely used) ───────────
+
+  function buildChatSection() {
+    return `
+      <div class="pp-section pp-chat-section">
+        <div class="pp-chat-log" id="pp-chat-log"></div>
+        <div class="pp-chat-input-row">
+          <input type="text" class="pp-chat-input" id="pp-chat-input"
+            placeholder="Ask about this patient…" autocomplete="off" />
+          <button class="pp-btn pp-btn-sm pp-btn-primary pp-chat-send" data-action="chat-send" title="Send">➤</button>
         </div>
       </div>
-
-      ${buildCDTLookupSection()}
     `;
+  }
+
+  /** Handle chat send — calls Claude with patient context */
+  async function handleChatSend() {
+    const input = panelEl?.querySelector("#pp-chat-input");
+    const log = panelEl?.querySelector("#pp-chat-log");
+    if (!input || !log) return;
+
+    const question = input.value.trim();
+    if (!question || isChatting) return;
+
+    // Show user's message
+    log.innerHTML += `<div class="pp-chat-msg pp-chat-user">${escapeHTML(question)}</div>`;
+    input.value = "";
+    isChatting = true;
+
+    // Show typing indicator
+    log.innerHTML += '<div class="pp-chat-msg pp-chat-bot pp-chat-typing">Thinking…</div>';
+    log.scrollTop = log.scrollHeight;
+
+    try {
+      const answer = await askClaude(question);
+      // Replace typing indicator with answer
+      const typing = log.querySelector(".pp-chat-typing");
+      if (typing) typing.remove();
+      log.innerHTML += `<div class="pp-chat-msg pp-chat-bot">${escapeHTML(answer)}</div>`;
+    } catch (e) {
+      const typing = log.querySelector(".pp-chat-typing");
+      if (typing) typing.remove();
+      log.innerHTML += `<div class="pp-chat-msg pp-chat-bot pp-chat-error">Error: ${escapeHTML(e.message)}</div>`;
+    }
+
+    isChatting = false;
+    log.scrollTop = log.scrollHeight;
+  }
+
+  /** Send a freeform question to Claude with patient context */
+  async function askClaude(question) {
+    const config = await PP.llmExtractor.getConfig();
+    if (!config.apiKey) throw new Error("API key not set — open PracticePilot settings.");
+
+    // Build concise context from what we know
+    let contextParts = [];
+    if (currentPatientCtx) {
+      const c = currentPatientCtx;
+      contextParts.push(`Patient: ${c.patientName || "unknown"}`);
+      if (c.profile.age) contextParts.push(`Age: ${c.profile.age}`);
+      if (c.profile.gender) contextParts.push(`Gender: ${c.profile.gender}`);
+      if (c.insurance.carrier) contextParts.push(`Insurance: ${c.insurance.carrier}`);
+      if (c.insurance.planName) contextParts.push(`Plan: ${c.insurance.planName}`);
+      if (c.insurance.lastVerified) contextParts.push(`Last verified: ${c.insurance.lastVerified}`);
+      if (c.todayAppt?.codes?.length) contextParts.push(`Today's scheduled codes: ${c.todayAppt.codes.join(", ")}`);
+      if (c.todayAppt?.isNewPatient) contextParts.push("This is a NEW PATIENT visit");
+      if (c.todayAppt?.startTime) contextParts.push(`Appt time: ${c.todayAppt.startTime}`);
+      if (c.billing.hasBalance) contextParts.push(`Outstanding balance: $${c.billing.balance}`);
+      if (c.billing.hasOwingInvoices) contextParts.push("Has owing invoices");
+      if (c.recare.noRecareFound) contextParts.push("No recare schedule set up");
+      if (c.recare.nextDue) contextParts.push(`Next recare due: ${c.recare.nextDue}`);
+      if (c.charting.hasUnscheduledTx) contextParts.push("Has unscheduled accepted treatment");
+      if (c.charting.pendingCodes?.length) contextParts.push(`Pending tx codes: ${c.charting.pendingCodes.join(", ")}`);
+      if (c.forms.hasPendingForms) contextParts.push("Has incomplete patient forms");
+      if (c.perio.hasPerioData) contextParts.push("Perio charting data on file");
+      if (c.tabsScanned.length) contextParts.push(`Tabs reviewed: ${c.tabsScanned.join(", ")}`);
+    }
+    if (currentCard) {
+      if (currentCard.annualMax?.individual) contextParts.push(`Annual max: $${currentCard.annualMax.individual}`);
+      if (currentCard.annualMax?.remaining) contextParts.push(`Max remaining: $${currentCard.annualMax.remaining}`);
+      if (currentCard.deductible?.individual) contextParts.push(`Deductible: $${currentCard.deductible.individual}`);
+      if (currentCard.coverageTable?.length) {
+        const covSummary = currentCard.coverageTable
+          .filter(r => r.inNetwork != null)
+          .map(r => `${r.category}: ${r.inNetwork}%`)
+          .join(", ");
+        if (covSummary) contextParts.push(`Coverage: ${covSummary}`);
+      }
+      if (currentCard.frequencies) {
+        const freqs = Object.entries(currentCard.frequencies)
+          .filter(([, v]) => v)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(", ");
+        if (freqs) contextParts.push(`Frequencies: ${freqs}`);
+      }
+      if (currentCard.nonCovered?.length) contextParts.push(`Non-covered: ${currentCard.nonCovered.join(", ")}`);
+    }
+
+    const systemMsg = `You are PracticePilot, a dental practice assistant for Merit Dental.
+Answer briefly (1-3 sentences). Be specific and actionable.
+Do NOT reveal PHI — keep answers clinical/operational.
+
+Known context:
+${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."}`;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": config.apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: config.model || "claude-sonnet-4-20250514",
+        max_tokens: 300,
+        temperature: 0.3,
+        system: systemMsg,
+        messages: [{ role: "user", content: question }],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`API error (${response.status})`);
+    }
+
+    const data = await response.json();
+    return data.content?.[0]?.text || "No response.";
   }
 
   // ── Patient view scan + action list ─────────────────────
@@ -536,6 +658,16 @@
     if (!pageText || pageText.length < 50) return;
 
     try {
+      // Quick-check: did the patient change?
+      const newName = PP.patientContext._extractPatientName(pageText);
+      if (newName && lastPatientName && newName.toLowerCase() !== lastPatientName.toLowerCase()) {
+        console.log(`[PracticePilot] Patient changed: ${lastPatientName} → ${newName}`);
+        currentPatientCtx = null;
+        currentCard = null;
+        cardFromCache = false;
+      }
+      lastPatientName = newName || lastPatientName;
+
       const ctx = await PP.patientContext.scanAndMerge(pageText);
       if (!ctx) return;
 
@@ -747,6 +879,10 @@
 
       case "rescan-patient":
         scanPatientAndShowActions();
+        break;
+
+      case "chat-send":
+        handleChatSend();
         break;
 
       case "show-benefits":
@@ -1056,6 +1192,17 @@
     const recentContainer = panelEl.querySelector("#pp-recent-patients");
     if (recentContainer) {
       loadRecentPatients(recentContainer);
+    }
+
+    // Wire chat input — Enter to send
+    const chatInput = panelEl.querySelector("#pp-chat-input");
+    if (chatInput) {
+      chatInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          handleChatSend();
+        }
+      });
     }
   }
 
