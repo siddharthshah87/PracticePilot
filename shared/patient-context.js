@@ -271,10 +271,21 @@ PracticePilot.patientContext = {
       "primary", "secondary", "head", "household", "relationship",
     ]);
 
+    // Words that can NEVER appear in a patient name — even as one word in a multi-word string.
+    // More aggressive than the full-phrase check above.
+    const NEVER_IN_NAME = new Set([
+      "summary", "gender", "appointment", "appointments", "insurance",
+      "billing", "charting", "claims", "schedule", "recare", "perio",
+      "profile", "settings", "filter", "search", "dashboard", "overview",
+      "treatment", "clinical", "male", "female", "address",
+      "household", "relationship", "edit", "delete", "cancel",
+    ]);
+
+    // Normalize text: replace non-breaking spaces and similar Unicode with regular spaces
+    const normalizedText = text.replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, ' ');
+
     // Strategy 1: Curve sidebar — "arrow_drop_down\n{Name}\nProfile"
-    // Tighter regex: the name line must be a SINGLE line with 2-4 capitalized words
-    // immediately between arrow_drop_down and Profile, with NO colons (rules out labels).
-    const lines = text.split('\n').map(l => l.trim());
+    const lines = normalizedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     for (let i = 0; i < lines.length - 2; i++) {
       if (lines[i] !== 'arrow_drop_down') continue;
       const candidate = lines[i + 1];
@@ -293,11 +304,24 @@ PracticePilot.patientContext = {
       const lowerWords = words.map(w => w.toLowerCase());
       if (lowerWords.every(w => UI_LABELS.has(w))) continue;
 
+      // Reject if ANY word is a "never in a name" word
+      if (lowerWords.some(w => NEVER_IN_NAME.has(w))) continue;
+
+      console.log("[PracticePilot] Name extraction: accepted candidate:", candidate);
       return candidate;
     }
 
     // Strategy 2: PHI redactor patterns ("Patient Name: ...", etc.)
-    return PracticePilot.phiRedactor?.extractPatientName(text) || null;
+    const phiName = PracticePilot.phiRedactor?.extractPatientName(normalizedText) || null;
+    if (phiName) {
+      // Apply same blocklist check to PHI-extracted names
+      const phiWords = phiName.split(/\s+/).map(w => w.toLowerCase());
+      if (phiWords.some(w => NEVER_IN_NAME.has(w))) {
+        console.warn("[PracticePilot] PHI redactor returned UI label as name, rejecting:", phiName);
+        return null;
+      }
+    }
+    return phiName;
   },
 
   // ── Empty context template ───────────────────────────────
