@@ -77,17 +77,39 @@ PracticePilot.actionEngine = {
     // ── Billing checks ───────────────────────────────────
 
     if (ctx.tabsScanned.includes("billing")) {
-      if (ctx.billing.hasBalance) {
+      // Overdue balance (31+ days)
+      if (ctx.billing.hasOverdue && ctx.billing.aging) {
+        const overdue = [ctx.billing.aging.days31_60, ctx.billing.aging.days61_90, ctx.billing.aging.over90]
+          .map(v => parseFloat((v || "0").replace(/,/g, "")))
+          .reduce((a, b) => a + b, 0);
+        if (overdue > 0) {
+          add(this.PRIORITY.ACTION, "⏰", "Overdue balance",
+            `$${overdue.toFixed(2)} overdue (31+ days). Review aging and discuss with patient.`,
+            "billing");
+        }
+      }
+      // Current balance
+      if (ctx.billing.hasBalance && !ctx.billing.hasOverdue) {
+        add(this.PRIORITY.INFO, "💰", "Account balance",
+          `Patient account balance: $${ctx.billing.balance}.`,
+          "billing");
+      } else if (ctx.billing.hasBalance && ctx.billing.hasOverdue) {
         add(this.PRIORITY.ACTION, "💰", "Outstanding balance",
-          `Patient owes $${ctx.billing.balance}. Discuss before treatment.`,
+          `Total account balance: $${ctx.billing.balance}. Discuss before treatment.`,
           "billing");
       }
-      if (ctx.billing.hasOwingInvoices) {
-        add(this.PRIORITY.ACTION, "📄", "Unpaid invoices on file",
-          "Review and collect on owing invoices.",
+      // Credit on account
+      if (ctx.billing.hasCredit) {
+        add(this.PRIORITY.INFO, "💳", "Credit on account",
+          `Account has a credit of $${ctx.billing.creditAmount}. Can apply to future services.`,
           "billing");
       }
-      // No balance = good, no action needed (don't show "balance is $0" — that's duplicative)
+      // Pending insurance claims
+      if (ctx.billing.openClaimTags > 0) {
+        add(this.PRIORITY.INFO, "📨", "Open insurance claims",
+          `${ctx.billing.openClaimTags} claim(s) still tagged Open — follow up with carrier.`,
+          "billing");
+      }
     }
 
     // ── Recare checks ────────────────────────────────────

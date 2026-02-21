@@ -276,19 +276,34 @@
         currentPatientCtx = null;
         currentCard = null;
         cardFromCache = false;
+        // Clear LLM cache when switching patients
+        PP.llmContextExtractor?.clearCache();
       }
       lastPatientName = newName || lastPatientName;
 
-      const ctx = await PP.patientContext.scanAndMerge(pageText);
-      if (!ctx) return;
+      // Look up cached benefit card for this patient (needed for LLM cross-reference)
+      let benefitCard = null;
+      if (currentCard && currentCard.patientName?.toLowerCase() === newName?.toLowerCase()) {
+        benefitCard = currentCard;
+      } else if (newName) {
+        const cacheKey = PP.storage.cacheKeyFromIdentifiers(newName, null, null);
+        const cached = await PP.storage.getCachedCard(cacheKey);
+        if (cached) {
+          benefitCard = cached.card;
+          currentCard = cached.card;
+          cardFromCache = true;
+        }
+      }
 
+      // scanAndMerge now returns { ctx, actions } — LLM-first, regex-fallback
+      const result = await PP.patientContext.scanAndMerge(pageText, benefitCard);
+      if (!result) return;
+
+      const { ctx, actions } = result;
       currentPatientCtx = ctx;
 
-      // Look up cached benefit card for this patient
-      let benefitCard = null;
-      if (currentCard && currentCard.patientName?.toLowerCase() === ctx.patientName?.toLowerCase()) {
-        benefitCard = currentCard;
-      } else {
+      // Try to get benefit card from insurance carrier if we didn't have one
+      if (!benefitCard && ctx.insurance?.carrier) {
         const cacheKey = PP.storage.cacheKeyFromIdentifiers(ctx.patientName, null, ctx.insurance.carrier);
         const cached = await PP.storage.getCachedCard(cacheKey);
         if (cached) {
@@ -299,11 +314,10 @@
       }
 
       // Update the persistent patient banner
-      const insuranceLabel = [ctx.insurance.carrier, ctx.insurance.planName].filter(Boolean).join(" · ") || "Insurance unknown";
+      const insuranceLabel = [ctx.insurance?.carrier, ctx.insurance?.planName].filter(Boolean).join(" · ") || "Insurance unknown";
       updatePatientBanner(ctx.patientName, insuranceLabel);
       updateCoveragePills(benefitCard);
 
-      const actions = PP.actionEngine.generate(ctx, benefitCard);
       renderActions(ctx, actions);
     } catch (e) {
       console.warn("[PracticePilot SidePanel] Patient scan error:", e);
@@ -464,19 +478,21 @@
     if (currentPatientCtx) {
       const c = currentPatientCtx;
       contextParts.push(`Patient: ${c.patientName || "unknown"}`);
-      if (c.profile.age) contextParts.push(`Age: ${c.profile.age}`);
-      if (c.profile.gender) contextParts.push(`Gender: ${c.profile.gender}`);
-      if (c.insurance.carrier) contextParts.push(`Insurance: ${c.insurance.carrier}`);
-      if (c.insurance.planName) contextParts.push(`Plan: ${c.insurance.planName}`);
+      if (c.profile?.age) contextParts.push(`Age: ${c.profile.age}`);
+      if (c.profile?.gender) contextParts.push(`Gender: ${c.profile.gender}`);
+      if (c.insurance?.carrier) contextParts.push(`Insurance: ${c.insurance.carrier}`);
+      if (c.insurance?.planName) contextParts.push(`Plan: ${c.insurance.planName}`);
       if (c.todayAppt?.codes?.length) contextParts.push(`Today's scheduled codes: ${c.todayAppt.codes.join(", ")}`);
       if (c.todayAppt?.isNewPatient) contextParts.push("This is a NEW PATIENT visit");
-      if (c.billing.hasBalance) contextParts.push(`Outstanding balance: $${c.billing.balance}`);
-      if (c.recare.noRecareFound) contextParts.push("No recare schedule set up");
-      if (c.recare.nextDue) contextParts.push(`Next recare due: ${c.recare.nextDue}`);
-      if (c.charting.hasUnscheduledTx) contextParts.push("Has unscheduled accepted treatment");
-      if (c.forms.hasPendingForms) contextParts.push("Has incomplete patient forms");
-      if (c.perio.hasPerioData) contextParts.push("Perio charting data on file");
-      if (c.tabsScanned.length) contextParts.push(`Tabs reviewed: ${c.tabsScanned.join(", ")}`);
+      if (c.billing?.hasBalance) contextParts.push(`Outstanding balance: $${c.billing.balance}`);
+      if (c.billing?.aging) contextParts.push(`Aging: 0-30=$${c.billing.aging.past30}, 31-60=$${c.billing.aging.days31_60}, 61-90=$${c.billing.aging.days61_90}, 90+=$${c.billing.aging.over90}`);
+      if (c.recare?.noRecareFound) contextParts.push("No recare schedule set up");
+      if (c.recare?.nextDue) contextParts.push(`Next recare due: ${c.recare.nextDue}`);
+      if (c.charting?.hasUnscheduledTx) contextParts.push("Has unscheduled accepted treatment");
+      if (c.charting?.pendingCodes?.length) contextParts.push(`Pending CDT codes: ${c.charting.pendingCodes.join(", ")}`);
+      if (c.forms?.hasPendingForms) contextParts.push("Has incomplete patient forms");
+      if (c.perio?.hasPerioData) contextParts.push("Perio charting data on file");
+      if (c.tabsScanned?.length) contextParts.push(`Tabs reviewed: ${c.tabsScanned.join(", ")}`);
     }
     if (currentCard) {
       if (currentCard.annualMax?.individual) contextParts.push(`Annual max: $${currentCard.annualMax.individual}`);
