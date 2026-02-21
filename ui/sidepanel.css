@@ -215,6 +215,41 @@ html, body {
 .pp-body::-webkit-scrollbar-track { background: transparent; }
 .pp-body::-webkit-scrollbar-thumb { background: var(--pp-gray-300); border-radius: 2px; }
 
+/* ── View Tab Bar ──────────────────────────────────────── */
+
+.pp-view-tabs {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--pp-gray-200);
+  background: #fff;
+  padding: 0 14px;
+  gap: 0;
+}
+
+.pp-view-tab {
+  flex: 1;
+  padding: 8px 0;
+  font-family: var(--pp-font);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pp-gray-500);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  text-align: center;
+}
+
+.pp-view-tab:hover {
+  color: var(--pp-gray-700);
+}
+
+.pp-view-tab-active {
+  color: var(--pp-primary);
+  border-bottom-color: var(--pp-primary);
+}
+
 /* ── Fixed Chat Bar (bottom) ───────────────────────────── */
 
 .pp-chat-bar {

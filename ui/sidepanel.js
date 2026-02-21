@@ -28,6 +28,9 @@
   let isScanning = false;
   let pendingScanText = null;
   let lastSectionsDetected = [];
+  let activeView = "actions";        // "actions" | "benefits"
+  let cachedActionsHTML = null;       // so we can switch back without re-rendering
+  let cachedBenefitsHTML = null;
 
   // ── DOM refs ────────────────────────────────────────────
 
@@ -39,6 +42,7 @@
   const patientSubEl = document.getElementById("pp-patient-sub");
   const patientAvatarEl = document.getElementById("pp-patient-avatar");
   const coveragePillsEl = document.getElementById("pp-coverage-pills");
+  const viewTabsEl = document.getElementById("pp-view-tabs");
   const chatLogEl = document.getElementById("pp-chat-log");
   const chatInputEl = document.getElementById("pp-chat-input");
 
@@ -163,13 +167,13 @@
 
     // Deductible & Max as small info pills
     if (card.deductible?.individual) {
-      pills.push(`<span class="pp-coverage-pill pp-pill-deductible">Ded: $${escapeHTML(card.deductible.individual)}</span>`);
+      pills.push(`<span class="pp-coverage-pill pp-pill-deductible">Ded: ${fmtDollar(card.deductible.individual)}</span>`);
     }
     if (card.annualMax?.individual) {
-      pills.push(`<span class="pp-coverage-pill pp-pill-max">Max: $${escapeHTML(card.annualMax.individual)}</span>`);
+      pills.push(`<span class="pp-coverage-pill pp-pill-max">Max: ${fmtDollar(card.annualMax.individual)}</span>`);
     }
     if (card.annualMax?.remaining) {
-      pills.push(`<span class="pp-coverage-pill pp-pill-max">Rem: $${escapeHTML(card.annualMax.remaining)}</span>`);
+      pills.push(`<span class="pp-coverage-pill pp-pill-max">Rem: ${fmtDollar(card.annualMax.remaining)}</span>`);
     }
 
     // Coverage category pills
@@ -756,6 +760,11 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
       ${buildCDTLookupSection()}
     `;
     wireActions();
+
+    // Cache so we can switch back from Benefits tab
+    cachedActionsHTML = bodyEl.innerHTML;
+    activeView = "actions";
+    updateViewTabs();
   }
 
   /**
@@ -783,9 +792,9 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
     let deductMax = "";
     if (card.deductible?.individual || card.annualMax?.individual) {
       const parts = [];
-      if (card.deductible?.individual) parts.push(`Ded: $${escapeHTML(card.deductible.individual)}`);
-      if (card.annualMax?.individual) parts.push(`Max: $${escapeHTML(card.annualMax.individual)}`);
-      if (card.annualMax?.remaining) parts.push(`Rem: $${escapeHTML(card.annualMax.remaining)}`);
+      if (card.deductible?.individual) parts.push(`Ded: ${fmtDollar(card.deductible.individual)}`);
+      if (card.annualMax?.individual) parts.push(`Max: ${fmtDollar(card.annualMax.individual)}`);
+      if (card.annualMax?.remaining) parts.push(`Rem: ${fmtDollar(card.annualMax.remaining)}`);
       deductMax = `<div class="pp-cov-deduct-max">${parts.join(" · ")}</div>`;
     }
 
@@ -959,7 +968,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
     if (billing.balance) {
       const balanceClass = billing.hasOverdue ? "pp-balance-overdue" : (billing.hasBalance ? "pp-balance-due" : "pp-balance-clear");
       balanceHTML = `<div class="pp-billing-balance ${balanceClass}">
-        <span class="pp-billing-amount">$${escapeHTML(billing.balance)}</span>
+        <span class="pp-billing-amount">${fmtDollar(billing.balance)}</span>
         <span class="pp-billing-label">${billing.hasOverdue ? "Overdue Balance" : "Account Balance"}</span>
       </div>`;
     }
@@ -977,7 +986,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
       if (agingItems.length) {
         agingHTML = `<div class="pp-aging-grid">${agingItems.map(item => `
           <div class="pp-aging-item">
-            <span class="pp-aging-value">$${escapeHTML(item.value)}</span>
+            <span class="pp-aging-value">${fmtDollar(item.value)}</span>
             <span class="pp-aging-label">${item.label} days</span>
           </div>
         `).join("")}</div>`;
@@ -986,7 +995,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
 
     let creditHTML = "";
     if (billing.hasCredit && billing.creditAmount) {
-      creditHTML = `<div class="pp-billing-credit">Credit: $${escapeHTML(billing.creditAmount)}</div>`;
+      creditHTML = `<div class="pp-billing-credit">Credit: ${fmtDollar(billing.creditAmount)}</div>`;
     }
 
     return `
@@ -1077,14 +1086,14 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
       <div class="pp-benefit-grid">
         <div class="pp-benefit-card">
           <div class="pp-benefit-card-label">Deductible</div>
-          <div class="pp-benefit-card-value${!card.deductible?.individual ? ' pp-missing' : ''}">${card.deductible?.individual ? '$' + escapeHTML(card.deductible.individual) : '—'}</div>
+          <div class="pp-benefit-card-value${!card.deductible?.individual ? ' pp-missing' : ''}">${card.deductible?.individual ? fmtDollar(card.deductible.individual) : '—'}</div>
         </div>
         <div class="pp-benefit-card">
           <div class="pp-benefit-card-label">Annual Max</div>
-          <div class="pp-benefit-card-value${!card.annualMax?.individual ? ' pp-missing' : ''}">${card.annualMax?.individual ? '$' + escapeHTML(card.annualMax.individual) : '—'}</div>
+          <div class="pp-benefit-card-value${!card.annualMax?.individual ? ' pp-missing' : ''}">${card.annualMax?.individual ? fmtDollar(card.annualMax.individual) : '—'}</div>
         </div>
-        ${card.annualMax?.remaining ? `<div class="pp-benefit-card"><div class="pp-benefit-card-label">Remaining</div><div class="pp-benefit-card-value">$${escapeHTML(card.annualMax.remaining)}</div></div>` : ''}
-        ${card.annualMax?.used ? `<div class="pp-benefit-card"><div class="pp-benefit-card-label">Used</div><div class="pp-benefit-card-value">$${escapeHTML(card.annualMax.used)}</div></div>` : ''}
+        ${card.annualMax?.remaining ? `<div class="pp-benefit-card"><div class="pp-benefit-card-label">Remaining</div><div class="pp-benefit-card-value">${fmtDollar(card.annualMax.remaining)}</div></div>` : ''}
+        ${card.annualMax?.used ? `<div class="pp-benefit-card"><div class="pp-benefit-card-label">Used</div><div class="pp-benefit-card-value">${fmtDollar(card.annualMax.used)}</div></div>` : ''}
       </div>
     `;
 
@@ -1130,9 +1139,54 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
       </div>
     `;
     wireActions();
+
+    // Cache this rendered HTML so we can switch back
+    cachedBenefitsHTML = bodyEl.innerHTML;
+    activeView = "benefits";
+    updateViewTabs();
   }
 
-  // ── CDT Lookup ──────────────────────────────────────────
+  // ── View Tab Management ─────────────────────────────────
+
+  function updateViewTabs() {
+    // Only show tabs when we have both a patient context AND a benefit card
+    const showTabs = !!(currentPatientCtx && currentCard);
+    viewTabsEl.style.display = showTabs ? "" : "none";
+
+    if (showTabs) {
+      viewTabsEl.querySelectorAll(".pp-view-tab").forEach(btn => {
+        btn.classList.toggle("pp-view-tab-active", btn.dataset.view === activeView);
+      });
+    }
+  }
+
+  function switchToView(view) {
+    if (view === activeView) return;
+    activeView = view;
+
+    if (view === "actions" && cachedActionsHTML) {
+      bodyEl.innerHTML = cachedActionsHTML;
+      wireActions();
+    } else if (view === "benefits" && cachedBenefitsHTML) {
+      bodyEl.innerHTML = cachedBenefitsHTML;
+      wireActions();
+    } else if (view === "benefits" && currentCard) {
+      const missingItems = PP.normalize.missingItems(currentCard);
+      renderResult(currentCard, missingItems, { cached: cardFromCache });
+    } else if (view === "actions" && currentPatientCtx) {
+      renderActions(currentPatientCtx, []);
+    }
+
+    updateViewTabs();
+  }
+
+  // Wire tab clicks
+  viewTabsEl.addEventListener("click", (e) => {
+    const tab = e.target.closest(".pp-view-tab");
+    if (tab?.dataset.view) {
+      switchToView(tab.dataset.view);
+    }
+  });
 
   function buildCDTLookupSection() {
     return `
@@ -1323,6 +1377,8 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
         if (currentCard) {
           const missingItems = PP.normalize.missingItems(currentCard);
           renderResult(currentCard, missingItems, { cached: cardFromCache });
+          activeView = "benefits";
+          updateViewTabs();
         }
         break;
     }
@@ -1352,6 +1408,11 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
     const div = document.createElement("div");
     div.textContent = String(str);
     return div.innerHTML;
+  }
+
+  /** Format a dollar value, preventing double-$ (values may already contain $) */
+  function fmtDollar(v) {
+    return '$' + escapeHTML(String(v).replace(/^\$/, ''));
   }
 
   async function copyToClipboard(buttonEl, text) {
