@@ -21,7 +21,7 @@
     // ── Configuration ──────────────────────────────────────
 
     // Use the cheapest capable model for structured extraction
-    EXTRACTION_MODEL: "claude-3-5-haiku-20241022",
+    EXTRACTION_MODEL: "claude-3-5-haiku-latest",
 
     // Cache of hash → extracted result (in-memory, per session)
     _cache: new Map(),
