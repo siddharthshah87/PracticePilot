@@ -145,7 +145,11 @@ PracticePilot.patientContext = {
         ctx.billing.hasBalance = parseFloat(balance[1].replace(",", "")) > 0;
       }
 
-      ctx.billing.hasOwingInvoices = !text.includes("no owing invoices");
+      // Only flag owing invoices if there's positive evidence
+      // "Owing Invoice" header present AND the page does NOT say "no owing invoices"
+      const hasOwingHeader = /owing\s+invoice/i.test(text);
+      const noOwing = /no owing invoices/i.test(text);
+      ctx.billing.hasOwingInvoices = hasOwingHeader && !noOwing;
 
       // Parse totals
       const totals = text.match(/Total\s+\$([\d,]+\.\d{2})\s+\$([\d,]+\.\d{2})\s+\$([\d,]+\.\d{2})/i);
