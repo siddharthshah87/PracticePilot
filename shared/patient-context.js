@@ -246,10 +246,23 @@ PracticePilot.patientContext = {
   // ── Patient name extraction ──────────────────────────────
 
   _extractPatientName(text) {
+    // Known Curve UI labels that can appear before "Profile" and look like names
+    const UI_LABELS = new Set([
+      "summary", "gender", "appointment", "appointments", "insurance",
+      "billing", "charting", "forms", "claims", "schedule", "recare",
+      "perio", "profile", "settings", "filter", "search", "dashboard",
+      "overview", "history", "notes", "treatment", "patient", "clinical",
+    ]);
+
     // Curve sidebar shows patient name prominently after queue/search
     // Pattern: "arrow_drop_down\n{PatientName}\nProfile"
     const curvePattern = text.match(/arrow_drop_down\s*\n\s*([A-Z][a-zA-Z'\-]+(?:\s+[A-Z][a-zA-Z'\-]+){1,3})\s*\n\s*Profile/i);
-    if (curvePattern) return curvePattern[1].trim();
+    if (curvePattern) {
+      const candidate = curvePattern[1].trim();
+      const words = candidate.toLowerCase().split(/\s+/);
+      const isUILabel = words.every(w => UI_LABELS.has(w));
+      if (!isUILabel) return candidate;
+    }
 
     // Fallback: PHI redactor's extractor
     return PracticePilot.phiRedactor?.extractPatientName(text) || null;
