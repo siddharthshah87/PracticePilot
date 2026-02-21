@@ -649,6 +649,310 @@ html, body {
   color: var(--pp-gray-400);
 }
 
+/* ── Coverage Summary Section ── */
+.pp-cov-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pp-cov-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.pp-cov-category {
+  flex: 0 0 90px;
+  font-weight: 500;
+  color: var(--pp-gray-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pp-cov-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--pp-gray-100);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.pp-cov-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.pp-cov-bar.pp-cov-high { background: #22c55e; }
+.pp-cov-bar.pp-cov-mid  { background: #f59e0b; }
+.pp-cov-bar.pp-cov-low  { background: #ef4444; }
+
+.pp-cov-pct {
+  flex: 0 0 36px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.pp-cov-pct.pp-cov-high { color: #16a34a; }
+.pp-cov-pct.pp-cov-mid  { color: #d97706; }
+.pp-cov-pct.pp-cov-low  { color: #dc2626; }
+
+.pp-cov-deduct-max {
+  font-size: 11px;
+  color: var(--pp-gray-600);
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background: var(--pp-gray-50);
+  border-radius: var(--pp-radius-sm);
+  font-weight: 500;
+}
+
+/* ── Cash Patient ── */
+.pp-cash-patient {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+}
+
+.pp-cash-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pp-cash-icon {
+  font-size: 24px;
+}
+
+.pp-cash-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #92400e;
+}
+
+.pp-cash-detail {
+  font-size: 12px;
+  color: #a16207;
+}
+
+.pp-cash-patient-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px !important;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+}
+
+.pp-cash-title-sm {
+  font-weight: 600;
+  font-size: 12px;
+  color: #92400e;
+}
+
+.pp-cash-detail-sm {
+  font-size: 11px;
+  color: #a16207;
+}
+
+/* ── Insurance Context ── */
+.pp-ins-header {
+  margin-top: 4px;
+}
+
+.pp-ins-carrier {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--pp-gray-800);
+}
+
+.pp-ins-verified {
+  font-size: 11px;
+  color: var(--pp-gray-500);
+  margin-top: 2px;
+}
+
+/* ── Claims Summary ── */
+.pp-claims-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pp-claim-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: var(--pp-radius-sm);
+  min-width: 60px;
+  flex: 1;
+}
+
+.pp-claim-count {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pp-claim-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 2px;
+}
+
+.pp-claim-urgent {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.pp-claim-pending {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.pp-claim-rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.pp-claim-paid {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.pp-claim-clear {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  flex: 1 1 100%;
+}
+
+.pp-claims-list {
+  margin-top: 8px;
+  border-top: 1px solid var(--pp-gray-200);
+  padding-top: 6px;
+}
+
+.pp-claim-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 11px;
+}
+
+.pp-claim-row-id {
+  flex: 1;
+  color: var(--pp-gray-600);
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.pp-claim-row-status {
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.pp-claim-row-amt {
+  flex: 0 0 60px;
+  text-align: right;
+  font-weight: 500;
+  color: var(--pp-gray-700);
+}
+
+/* ── Billing Summary ── */
+.pp-billing-balance {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  border-radius: var(--pp-radius-sm);
+  margin-bottom: 8px;
+}
+
+.pp-billing-amount {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pp-billing-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.pp-balance-overdue {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.pp-balance-due {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.pp-balance-clear {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.pp-aging-grid {
+  display: flex;
+  gap: 6px;
+}
+
+.pp-aging-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  padding: 6px 4px;
+  background: var(--pp-gray-50);
+  border-radius: var(--pp-radius-sm);
+  border: 1px solid var(--pp-gray-200);
+}
+
+.pp-aging-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pp-gray-800);
+}
+
+.pp-aging-label {
+  font-size: 9px;
+  color: var(--pp-gray-500);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+.pp-billing-credit {
+  font-size: 12px;
+  color: #16a34a;
+  font-weight: 500;
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: #f0fdf4;
+  border-radius: var(--pp-radius-sm);
+}
+
 .pp-cdt-browse-btn {
   display: block;
   width: 100%;

@@ -140,7 +140,8 @@ INSTRUCTIONS
 EXTRACT whatever patient data is visible on this page. The page may show one or more of these sections:
 • Profile: gender, age, DOB, phone, email, language, head of household
 • Insurance: carrier, plan name, last verified date, coverage details
-• Billing: account balance, aging (0-30, 31-60, 61-90, 90+), invoices, credits, claims
+• Billing: account balance, aging (0-30, 31-60, 61-90, 90+), invoices, credits
+• Claims: claim statuses, unsent claims, pending insurance, rejected claims
 • Recare: recall schedule, next due date
 • Charting: treatment plans, accepted/unscheduled procedures, CDT codes
 • Forms: completed vs pending patient forms
@@ -152,6 +153,14 @@ GENERATE ACTION ITEMS based on what you see. Actions must be:
 • Relevant to TODAY's dental visit
 • Prioritized: critical (must address now), action (should address), recommended (good practice), info (FYI)
 • Cross-referenced: e.g., if billing shows overdue + insurance is unverified → critical
+• Focus on items that require human attention — e.g., unsent claims, unverified insurance, overdue balance, missing forms
+• Do NOT generate generic or obvious actions (e.g., "review patient profile") — only flag items that need attention
+
+SECTION-SPECIFIC INSTRUCTIONS:
+• Claims tab: count unsent, pending, rejected, paid claims. Flag any unsent claims as critical — they need to be submitted.
+• Insurance tab: note carrier/plan. If no insurance info found, note as cash patient.
+• Billing tab: parse the aging table. Flag any balance over 30 days.
+• Charting: note unscheduled treatment with CDT codes if visible.
 
 CATEGORY → ICON MAPPING:
   critical → 🚨, billing → 💰, insurance → 🔄, forms → 📝, recare → 📅,
@@ -169,7 +178,7 @@ OUTPUT FORMAT — Return ONLY valid JSON, no markdown fences
 ═══════════════════════════════════════════════════════════
 
 {
-  "sectionsDetected": ["profile", "insurance", "billing", ...],
+  "sectionsDetected": ["profile", "insurance", "billing", "claims", ...],
   "context": {
     "profile": {
       "gender": "string or null",
@@ -203,9 +212,23 @@ OUTPUT FORMAT — Return ONLY valid JSON, no markdown fences
       "hasOwingInvoices": true/false,
       "hasCredit": true/false,
       "creditAmount": "dollar string or null",
-      "pendingClaims": number,
-      "openClaimTags": number,
       "ppoAdjustedTotal": "dollar string or null"
+    },
+    "claims": {
+      "totalClaims": number_or_null,
+      "unsentClaims": number_or_null,
+      "pendingInsurance": number_or_null,
+      "rejectedClaims": number_or_null,
+      "paidClaims": number_or_null,
+      "claimsList": [
+        {
+          "claimNumber": "string or null",
+          "status": "unsent|pending|paid|rejected|denied",
+          "amount": "dollar string or null",
+          "carrier": "string or null",
+          "date": "string or null"
+        }
+      ]
     },
     "recare": {
       "noRecareFound": true/false,

@@ -56,7 +56,7 @@ PracticePilot.patientContext = {
     const sections = llmResult.context || {};
 
     // Deep merge each section (LLM data wins over old data for non-null values)
-    for (const section of ["profile", "insurance", "billing", "recare", "charting", "perio", "appointments"]) {
+    for (const section of ["profile", "insurance", "billing", "claims", "recare", "charting", "perio", "appointments"]) {
       if (sections[section]) {
         ctx[section] = this._deepMerge(ctx[section] || {}, sections[section]);
       }
@@ -103,7 +103,7 @@ PracticePilot.patientContext = {
       category: a.category,
     }));
 
-    return { ctx, actions: mappedActions };
+    return { ctx, actions: mappedActions, currentSections: topDetected };
   },
 
   /**
@@ -151,7 +151,7 @@ PracticePilot.patientContext = {
 
     // Generate actions via old action engine (if available)
     const actions = PracticePilot.actionEngine?.generate(ctx) || [];
-    return { ctx, actions };
+    return { ctx, actions, currentSections: sections };
   },
 
   // ── Section detection (for regex fallback) ───────────────
@@ -160,6 +160,7 @@ PracticePilot.patientContext = {
     profile:     { markers: ["Date of Birth", "Gender", "Cell phone", "Address"] },
     insurance:   { markers: ["Plan Name:", "Carrier Name:", "Policy Details", "Maximums and Deductibles"] },
     billing:     { markers: ["Account Holder", "Invoice #", "Running Balance"] },
+    claims:      { markers: ["Claim #", "Claim Status", "Unsent", "Pending Insurance", "Claims Aging"] },
     recare:      { markers: ["Recare For", "No recare found", "Recare Due"] },
     charting:    { markers: ["Accepted, Unscheduled", "Filter Visits", "Treatment Plan"] },
     forms:       { markers: ["Health History", "Consent Form", "Filter Forms", "Add Form"] },
@@ -242,6 +243,15 @@ PracticePilot.patientContext = {
 
     perio(text, ctx) {
       ctx.perio.hasPerioData = text.includes("Probing Depths") || text.includes("Perio Charting");
+    },
+
+    claims(text, ctx) {
+      const unsent = text.match(/(\d+)\s*Unsent/i);
+      if (unsent) ctx.claims.unsentClaims = parseInt(unsent[1], 10);
+      const pending = text.match(/(\d+)\s*Pending\s*Insurance/i);
+      if (pending) ctx.claims.pendingInsurance = parseInt(pending[1], 10);
+      const rejected = text.match(/(\d+)\s*Rejected/i);
+      if (rejected) ctx.claims.rejectedClaims = parseInt(rejected[1], 10);
     },
   },
 

@@ -27,6 +27,7 @@
   let activeTabId = null;
   let isScanning = false;
   let pendingScanText = null;
+  let lastSectionsDetected = [];
 
   // ── DOM refs ────────────────────────────────────────────
 
@@ -311,6 +312,7 @@
         currentPatientCtx = null;
         currentCard = null;
         cardFromCache = false;
+        lastSectionsDetected = [];
         PP.llmContextExtractor?.clearCache();
 
         // Immediately show new patient banner with loading state
@@ -346,8 +348,9 @@
         return;
       }
 
-      const { ctx, actions } = result;
+      const { ctx, actions, currentSections } = result;
       currentPatientCtx = ctx;
+      lastSectionsDetected = currentSections || ctx.tabsScanned || [];
 
       // Try to get benefit card from insurance carrier if we didn't have one
       if (!benefitCard && ctx.insurance?.carrier) {
@@ -734,7 +737,11 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
       benefitLink = `<button class="pp-btn pp-btn-sm pp-btn-primary" data-action="show-benefits" style="width: 100%; margin-top: 6px;">📋 View Benefits</button>`;
     }
 
+    // ── Tab-contextual sections ──────────────────────────
+    const contextualSection = buildTabContextualSection(ctx);
+
     bodyEl.innerHTML = `
+      ${contextualSection}
       <div class="pp-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
           <div class="pp-section-title" style="margin: 0;">⚡ Actions</div>
@@ -749,6 +756,264 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
       ${buildCDTLookupSection()}
     `;
     wireActions();
+  }
+
+  /**
+   * Build a coverage summary section showing category percentages
+   * if a benefit card is available for the current patient.
+   */
+  function buildCoverageSummarySection() {
+    if (!currentCard) return "";
+
+    const card = currentCard;
+    const rows = (card.coverageTable || [])
+      .filter(r => r.inNetwork !== null && r.inNetwork !== undefined);
+    if (!rows.length) return "";
+
+    const covHTML = rows.map(r => {
+      const pct = r.inNetwork;
+      const cls = pct >= 80 ? "pp-cov-high" : pct >= 50 ? "pp-cov-mid" : "pp-cov-low";
+      return `<div class="pp-cov-row">
+        <span class="pp-cov-category">${escapeHTML(r.category)}</span>
+        <span class="pp-cov-bar-wrap"><span class="pp-cov-bar ${cls}" style="width:${Math.min(pct, 100)}%"></span></span>
+        <span class="pp-cov-pct ${cls}">${pct}%</span>
+      </div>`;
+    }).join("");
+
+    let deductMax = "";
+    if (card.deductible?.individual || card.annualMax?.individual) {
+      const parts = [];
+      if (card.deductible?.individual) parts.push(`Ded: $${escapeHTML(card.deductible.individual)}`);
+      if (card.annualMax?.individual) parts.push(`Max: $${escapeHTML(card.annualMax.individual)}`);
+      if (card.annualMax?.remaining) parts.push(`Rem: $${escapeHTML(card.annualMax.remaining)}`);
+      deductMax = `<div class="pp-cov-deduct-max">${parts.join(" · ")}</div>`;
+    }
+
+    return `
+      <div class="pp-section">
+        <div class="pp-section-title">📊 Coverage Summary</div>
+        ${deductMax}
+        <div class="pp-cov-grid">${covHTML}</div>
+      </div>
+    `;
+  }
+
+  /**
+   * Decide which tab-contextual section to show based on the most
+   * recently detected Curve tab. Priority: insurance → claims → billing.
+   */
+  function buildTabContextualSection(ctx) {
+    // Determine what the user is CURRENTLY looking at
+    // Use the latest sections detected (last scan) for current-tab context
+    const latest = lastSectionsDetected;
+
+    // Insurance tab → show coverage summary or "Cash Patient"
+    if (latest.includes("insurance")) {
+      return buildInsuranceContextSection(ctx);
+    }
+
+    // Claims tab → show claims status
+    if (latest.includes("claims")) {
+      return buildClaimsSummarySection(ctx);
+    }
+
+    // Billing tab → show billing summary
+    if (latest.includes("billing")) {
+      return buildBillingSummarySection(ctx);
+    }
+
+    // Default: show insurance status badge (Cash or carrier) + coverage if available
+    return buildInsuranceStatusBadge(ctx) + buildCoverageSummarySection();
+  }
+
+  /**
+   * Insurance tab context: full coverage summary or Cash Patient indicator.
+   */
+  function buildInsuranceContextSection(ctx) {
+    const ins = ctx.insurance || {};
+    const hasInsurance = ins.carrier || ins.planName;
+
+    if (!hasInsurance) {
+      return `
+        <div class="pp-section pp-cash-patient">
+          <div class="pp-cash-badge">
+            <span class="pp-cash-icon">💵</span>
+            <div>
+              <div class="pp-cash-title">Cash Patient</div>
+              <div class="pp-cash-detail">No insurance on file</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Has insurance — show carrier info + coverage summary
+    const carrierLine = [ins.carrier, ins.planName].filter(Boolean).join(" · ");
+    const verifiedLine = ins.lastVerified ? `Last verified: ${escapeHTML(ins.lastVerified)}` : "Not verified";
+
+    return `
+      <div class="pp-section">
+        <div class="pp-section-title">🔄 Insurance</div>
+        <div class="pp-ins-header">
+          <div class="pp-ins-carrier">${escapeHTML(carrierLine)}</div>
+          <div class="pp-ins-verified">${escapeHTML(verifiedLine)}</div>
+        </div>
+      </div>
+      ${buildCoverageSummarySection()}
+    `;
+  }
+
+  /**
+   * Claims tab context: show claim counts by status.
+   */
+  function buildClaimsSummarySection(ctx) {
+    const claims = ctx.claims || {};
+    const billing = ctx.billing || {};
+
+    // Pull numbers from both claims and billing sections
+    const unsent = claims.unsentClaims ?? billing.pendingClaims ?? null;
+    const pending = claims.pendingInsurance ?? null;
+    const rejected = claims.rejectedClaims ?? null;
+    const paid = claims.paidClaims ?? null;
+    const total = claims.totalClaims ?? null;
+
+    const hasAnyData = [unsent, pending, rejected, paid, total].some(v => v !== null);
+
+    if (!hasAnyData) {
+      return `
+        <div class="pp-section">
+          <div class="pp-section-title">📋 Claims</div>
+          <p style="font-size: 12px; color: var(--pp-gray-500); text-align: center; padding: 8px 0;">
+            Claims info will appear when you open the Claims tab in Curve
+          </p>
+        </div>
+      `;
+    }
+
+    const statItems = [];
+    if (unsent !== null && unsent > 0) {
+      statItems.push(`<div class="pp-claim-stat pp-claim-urgent"><span class="pp-claim-count">${unsent}</span><span class="pp-claim-label">Unsent</span></div>`);
+    }
+    if (pending !== null && pending > 0) {
+      statItems.push(`<div class="pp-claim-stat pp-claim-pending"><span class="pp-claim-count">${pending}</span><span class="pp-claim-label">Pending</span></div>`);
+    }
+    if (rejected !== null && rejected > 0) {
+      statItems.push(`<div class="pp-claim-stat pp-claim-rejected"><span class="pp-claim-count">${rejected}</span><span class="pp-claim-label">Rejected</span></div>`);
+    }
+    if (paid !== null && paid > 0) {
+      statItems.push(`<div class="pp-claim-stat pp-claim-paid"><span class="pp-claim-count">${paid}</span><span class="pp-claim-label">Paid</span></div>`);
+    }
+
+    // If everything is zero, show all-clear
+    if (!statItems.length) {
+      statItems.push(`<div class="pp-claim-stat pp-claim-clear"><span class="pp-claim-count">✓</span><span class="pp-claim-label">All Clear</span></div>`);
+    }
+
+    // Claims list detail (if LLM returned individual claims)
+    let claimsList = "";
+    if (claims.claimsList?.length) {
+      const rows = claims.claimsList.slice(0, 8).map(c => {
+        const statusCls = {
+          unsent: "pp-claim-urgent",
+          pending: "pp-claim-pending",
+          rejected: "pp-claim-rejected",
+          denied: "pp-claim-rejected",
+          paid: "pp-claim-paid",
+        }[c.status] || "";
+        return `<div class="pp-claim-row">
+          <span class="pp-claim-row-id">${escapeHTML(c.claimNumber || "—")}</span>
+          <span class="pp-claim-row-status ${statusCls}">${escapeHTML(c.status || "—")}</span>
+          <span class="pp-claim-row-amt">${escapeHTML(c.amount || "—")}</span>
+        </div>`;
+      }).join("");
+      claimsList = `<div class="pp-claims-list">${rows}</div>`;
+    }
+
+    return `
+      <div class="pp-section">
+        <div class="pp-section-title">📋 Claims Status</div>
+        <div class="pp-claims-grid">${statItems.join("")}</div>
+        ${claimsList}
+      </div>
+    `;
+  }
+
+  /**
+   * Billing tab context: show balance and aging summary.
+   */
+  function buildBillingSummarySection(ctx) {
+    const billing = ctx.billing || {};
+
+    if (!billing.balance && !billing.hasBalance && !billing.aging) {
+      return `
+        <div class="pp-section">
+          <div class="pp-section-title">💰 Billing</div>
+          <p style="font-size: 12px; color: var(--pp-gray-500); text-align: center; padding: 8px 0;">
+            Billing info will appear when you open the Billing tab in Curve
+          </p>
+        </div>
+      `;
+    }
+
+    let balanceHTML = "";
+    if (billing.balance) {
+      const balanceClass = billing.hasOverdue ? "pp-balance-overdue" : (billing.hasBalance ? "pp-balance-due" : "pp-balance-clear");
+      balanceHTML = `<div class="pp-billing-balance ${balanceClass}">
+        <span class="pp-billing-amount">$${escapeHTML(billing.balance)}</span>
+        <span class="pp-billing-label">${billing.hasOverdue ? "Overdue Balance" : "Account Balance"}</span>
+      </div>`;
+    }
+
+    let agingHTML = "";
+    if (billing.aging) {
+      const a = billing.aging;
+      const agingItems = [
+        { label: "0-30", value: a.past30 },
+        { label: "31-60", value: a.days31_60 },
+        { label: "61-90", value: a.days61_90 },
+        { label: "90+",  value: a.over90 },
+      ].filter(item => item.value && parseFloat(item.value.replace(/,/g, "")) > 0);
+
+      if (agingItems.length) {
+        agingHTML = `<div class="pp-aging-grid">${agingItems.map(item => `
+          <div class="pp-aging-item">
+            <span class="pp-aging-value">$${escapeHTML(item.value)}</span>
+            <span class="pp-aging-label">${item.label} days</span>
+          </div>
+        `).join("")}</div>`;
+      }
+    }
+
+    let creditHTML = "";
+    if (billing.hasCredit && billing.creditAmount) {
+      creditHTML = `<div class="pp-billing-credit">Credit: $${escapeHTML(billing.creditAmount)}</div>`;
+    }
+
+    return `
+      <div class="pp-section">
+        <div class="pp-section-title">💰 Billing Summary</div>
+        ${balanceHTML}
+        ${agingHTML}
+        ${creditHTML}
+      </div>
+    `;
+  }
+
+  /**
+   * Small insurance status badge for non-insurance/non-claims contexts.
+   */
+  function buildInsuranceStatusBadge(ctx) {
+    const ins = ctx.insurance || {};
+    const hasInsurance = ins.carrier || ins.planName;
+
+    if (!hasInsurance) {
+      return `<div class="pp-section pp-cash-patient-compact">
+        <span class="pp-cash-icon">💵</span>
+        <span class="pp-cash-title-sm">Cash Patient</span>
+        <span class="pp-cash-detail-sm">No insurance on file</span>
+      </div>`;
+    }
+    return "";
   }
 
   function renderResult(card, missingItems, extra = {}) {
@@ -870,17 +1135,12 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
   // ── CDT Lookup ──────────────────────────────────────────
 
   function buildCDTLookupSection() {
-    const starred = PP.cdtCodes?.starredCodes?.() || [];
-    const starredHTML = starred.map(r => buildCDTItemHTML(r)).join("");
     return `
       <div class="pp-section">
         <div class="pp-section-title">🦷 CDT Code Lookup</div>
         <div class="pp-cdt-lookup">
           <input type="text" class="pp-cdt-search" data-action="cdt-search" placeholder="Type code (D2740) or keyword (crown)…" autocomplete="off" />
-          <div class="pp-cdt-results" id="pp-cdt-results">
-            ${starredHTML ? `<div class="pp-cdt-section-heading">⭐ Common Codes</div>${starredHTML}` : ""}
-          </div>
-          <button class="pp-cdt-browse-btn" data-action="cdt-browse">Browse all codes by category</button>
+          <div class="pp-cdt-results" id="pp-cdt-results"></div>
         </div>
       </div>
     `;
@@ -916,11 +1176,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
     const container = document.getElementById("pp-cdt-results");
     if (!container) return;
     if (!query || query.length < 2) {
-      const starred = PP.cdtCodes?.starredCodes?.() || [];
-      const starredHTML = starred.map(r => buildCDTItemHTML(r)).join("");
-      container.innerHTML = starredHTML
-        ? `<div class="pp-cdt-section-heading">⭐ Common Codes</div>${starredHTML}`
-        : '<div class="pp-cdt-empty">Type at least 2 characters to search</div>';
+      container.innerHTML = '<div class="pp-cdt-empty">Type at least 2 characters to search</div>';
       return;
     }
     const results = PP.cdtCodes.search(query, 15);
