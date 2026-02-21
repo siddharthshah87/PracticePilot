@@ -248,21 +248,45 @@ PracticePilot.patientContext = {
   // ── Patient name extraction ──────────────────────────────
 
   _extractPatientName(text) {
+    // Words that appear in Curve's UI near the patient name.
+    // If the candidate is composed ENTIRELY of these, reject it.
     const UI_LABELS = new Set([
       "summary", "gender", "appointment", "appointments", "insurance",
       "billing", "charting", "forms", "claims", "schedule", "recare",
       "perio", "profile", "settings", "filter", "search", "dashboard",
       "overview", "history", "notes", "treatment", "patient", "clinical",
+      "edit", "delete", "add", "save", "cancel", "close", "new",
+      "male", "female", "other", "date", "birth", "age", "phone",
+      "email", "address", "language", "cell", "home", "work",
+      "primary", "secondary", "head", "household", "relationship",
     ]);
 
-    const curvePattern = text.match(/arrow_drop_down\s*\n\s*([A-Z][a-zA-Z'\-]+(?:\s+[A-Z][a-zA-Z'\-]+){1,3})\s*\n\s*Profile/i);
-    if (curvePattern) {
-      const candidate = curvePattern[1].trim();
-      const words = candidate.toLowerCase().split(/\s+/);
-      const isUILabel = words.every(w => UI_LABELS.has(w));
-      if (!isUILabel) return candidate;
+    // Strategy 1: Curve sidebar — "arrow_drop_down\n{Name}\nProfile"
+    // Tighter regex: the name line must be a SINGLE line with 2-4 capitalized words
+    // immediately between arrow_drop_down and Profile, with NO colons (rules out labels).
+    const lines = text.split('\n').map(l => l.trim());
+    for (let i = 0; i < lines.length - 2; i++) {
+      if (lines[i] !== 'arrow_drop_down') continue;
+      const candidate = lines[i + 1];
+      const nextLine = lines[i + 2];
+      if (nextLine !== 'Profile') continue;
+
+      // Reject if candidate contains colons, numbers, or is too short
+      if (!candidate || candidate.includes(':') || /\d/.test(candidate) || candidate.length < 3) continue;
+
+      // Must be 2-4 words, each starting with a letter
+      const words = candidate.split(/\s+/);
+      if (words.length < 2 || words.length > 4) continue;
+      if (!words.every(w => /^[A-Za-z][A-Za-z'\-]+$/.test(w))) continue;
+
+      // Reject if entirely composed of UI label words
+      const lowerWords = words.map(w => w.toLowerCase());
+      if (lowerWords.every(w => UI_LABELS.has(w))) continue;
+
+      return candidate;
     }
 
+    // Strategy 2: PHI redactor patterns ("Patient Name: ...", etc.)
     return PracticePilot.phiRedactor?.extractPatientName(text) || null;
   },
 

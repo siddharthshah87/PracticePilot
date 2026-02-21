@@ -320,27 +320,8 @@ OUTPUT FORMAT — Return ONLY valid JSON, no markdown fences
     },
 
     _extractPatientName(text) {
-      // Known Curve UI labels that can appear before "Profile"
-      const UI_LABELS = new Set([
-        "summary", "gender", "appointment", "appointments", "insurance",
-        "billing", "charting", "forms", "claims", "schedule", "recare",
-        "perio", "profile", "settings", "filter", "search", "dashboard",
-        "overview", "history", "notes", "treatment", "patient", "clinical",
-      ]);
-
-      // Curve pattern: "arrow_drop_down\n{Name}\nProfile"
-      const curvePattern = text.match(
-        /arrow_drop_down\s*\n\s*([A-Z][a-zA-Z'\-]+(?:\s+[A-Z][a-zA-Z'\-]+){1,3})\s*\n\s*Profile/i
-      );
-      if (curvePattern) {
-        const candidate = curvePattern[1].trim();
-        const words = candidate.toLowerCase().split(/\s+/);
-        const isUILabel = words.every(w => UI_LABELS.has(w));
-        if (!isUILabel) return candidate;
-      }
-
-      // Fallback: PHI redactor
-      return PracticePilot.phiRedactor?.extractPatientName(text) || null;
+      // Delegate to the single canonical implementation
+      return PracticePilot.patientContext._extractPatientName(text);
     },
 
     _parseJSON(responseText) {
