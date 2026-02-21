@@ -52,24 +52,25 @@ PracticePilot.pageDetector = {
       bodyText = document.body?.innerText || "";
     }
 
-    // 1. Eligibility / Benefits page (Curve or any site)
+    // 1. Patient view FIRST — URL /patient/ on Curve always wins
+    //    (prevents eligibility markers in insurance tab from hijacking detection)
+    if (this._isPatientView(url, bodyText)) {
+      return this.PAGE_TYPES.PATIENT_VIEW;
+    }
+
+    // 2. Eligibility / Benefits page (Curve eligibility response or any site)
     if (this._isEligibilityPage(url, bodyText)) {
       return this.PAGE_TYPES.ELIGIBILITY;
     }
 
-    // 2. Edit Insurance Plan modal (Curve-specific)
+    // 3. Edit Insurance Plan modal (Curve-specific)
     if (this._isInsuranceModal(bodyText)) {
       return this.PAGE_TYPES.INSURANCE_MODAL;
     }
 
-    // 3. Insurance company portal (Humana, Cigna, etc.)
+    // 4. Insurance company portal (Humana, Cigna, etc.)
     if (this._isInsurerPortal(url, bodyText)) {
       return this.PAGE_TYPES.INSURER_PORTAL;
-    }
-
-    // 4. Patient view (Curve sidebar with patient tabs open)
-    if (this._isPatientView(url, bodyText)) {
-      return this.PAGE_TYPES.PATIENT_VIEW;
     }
 
     // 5. Daily schedule (Curve)
@@ -77,12 +78,7 @@ PracticePilot.pageDetector = {
       return this.PAGE_TYPES.SCHEDULE;
     }
 
-    // 5. Patient chart (Curve)
-    if (this._isPatientChart(url, bodyText)) {
-      return this.PAGE_TYPES.PATIENT_CHART;
-    }
-
-    // 6. Claims (Curve)
+    // 6. Claims page
     if (this._isClaimsPage(url, bodyText)) {
       return this.PAGE_TYPES.CLAIMS;
     }
@@ -131,10 +127,13 @@ PracticePilot.pageDetector = {
   },
 
   _isPatientView(url, text) {
-    // Curve shows a sidebar with patient name + these tabs when a patient is loaded
+    // Primary: URL pattern — Curve patient URLs contain /patient/ in the hash
+    if (url.includes("curvehero.com") && /[#/]patient[/]/i.test(url)) {
+      return true;
+    }
+    // Fallback: DOM heuristics — sidebar shows these tabs when a patient is loaded
     const patientTabs = ["Profile", "Insurance", "Claims", "Billing", "Recare", "Charting", "Perio Charting"];
     const tabHits = patientTabs.filter(t => text.includes(t)).length;
-    // Need at least 4 of these tabs visible to confirm patient view
     return tabHits >= 4 && url.includes("curvehero.com");
   },
 

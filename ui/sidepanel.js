@@ -279,9 +279,16 @@
       ELIGIBILITY: "eligibility",
       PATIENT_VIEW: "patient_view",
       INSURER_PORTAL: "insurer_portal",
+      PATIENT_CHART: "patient_chart",
+      CLAIMS: "claims",
     };
 
-    if (currentPageType === PT.PATIENT_VIEW) {
+    // All patient-related page types trigger scanning
+    const isPatientPage = [
+      PT.PATIENT_VIEW, PT.PATIENT_CHART, PT.CLAIMS,
+    ].includes(currentPageType);
+
+    if (isPatientPage) {
       await scanPatientAndShowActions(data.pageText);
     } else if (currentPageType === PT.ELIGIBILITY) {
       await handleEligibilityPage(data.pageText);
