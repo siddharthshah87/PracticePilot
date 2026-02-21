@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PracticePilot</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div id="pp-root">
+    <div class="pp-header">
+      <div>
+        <span class="pp-header-title">PracticePilot</span>
+        <span class="pp-header-badge" id="pp-page-badge"></span>
+      </div>
+      <div class="pp-header-actions">
+        <button class="pp-header-btn" id="pp-settings-btn" title="Settings">⚙</button>
+      </div>
+    </div>
+    <div class="pp-body" id="pp-body">
+      <div class="pp-empty">
+        <div class="pp-empty-icon">🦷</div>
+        <p><strong>PracticePilot</strong></p>
+        <p>Navigate to a Curve Dental page to get started.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings overlay -->
+  <div id="pp-settings-overlay" class="pp-settings-overlay" style="display: none;">
+    <div class="pp-settings-panel">
+      <div class="pp-settings-header">
+        <span class="pp-section-title" style="margin:0;">⚙ Settings</span>
+        <button class="pp-header-btn" id="pp-settings-close" title="Close settings">✕</button>
+      </div>
+      <div class="pp-settings-body">
+        <label class="pp-label">Provider</label>
+        <select id="pp-provider" class="pp-input">
+          <option value="anthropic" selected>Anthropic (Claude)</option>
+          <option value="openai">OpenAI</option>
+          <option value="custom">Custom</option>
+        </select>
+
+        <label class="pp-label">API Key</label>
+        <input type="password" id="pp-api-key" class="pp-input" placeholder="sk-ant-…" autocomplete="off" />
+
+        <label class="pp-label">Model</label>
+        <input type="text" id="pp-model" class="pp-input" placeholder="claude-sonnet-4-20250514" />
+
+        <div id="pp-base-url-field" style="display: none;">
+          <label class="pp-label">Base URL</label>
+          <input type="text" id="pp-base-url" class="pp-input" placeholder="https://api.openai.com/v1" />
+        </div>
+
+        <div class="pp-btn-group" style="margin-top: 12px;">
+          <button class="pp-btn pp-btn-primary" id="pp-save-settings">Save</button>
+          <button class="pp-btn" id="pp-test-connection">Test Connection</button>
+        </div>
+        <div id="pp-settings-msg" class="pp-settings-msg" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared modules (order matters) -->
+  <script src="../shared/phi-redactor.js"></script>
+  <script src="../shared/normalize.js"></script>
+  <script src="../shared/storage.js"></script>
+  <script src="../shared/formatter.js"></script>
+  <script src="../shared/cdt-codes.js"></script>
+  <script src="../shared/patient-context.js"></script>
+  <script src="../shared/action-engine.js"></script>
+  <script src="../shared/llm-extractor.js"></script>
+  <script src="../content/eligibility-parser.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

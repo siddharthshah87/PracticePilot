@@ -2,8 +2,9 @@
 // PracticePilot — Background Service Worker
 // ============================================================
 // Handles:
+//   - Opening the Chrome Side Panel on icon click
 //   - Extension icon badge updates
-//   - Message routing between popup ↔ content scripts
+//   - Message routing between side panel ↔ content scripts
 //   - On-demand injection into non-Curve pages (insurer portals)
 //   - Extension install / update events
 // ============================================================
@@ -11,20 +12,9 @@
 // ── Content script file list (injection order matters) ────
 
 const CONTENT_SCRIPTS = [
-  "shared/phi-redactor.js",
-  "shared/normalize.js",
-  "shared/storage.js",
-  "shared/formatter.js",
-  "shared/cdt-codes.js",
-  "shared/patient-context.js",
-  "shared/action-engine.js",
-  "shared/llm-extractor.js",
   "content/page-detector.js",
-  "content/eligibility-parser.js",
   "content/main.js",
 ];
-
-const CONTENT_CSS = ["content/panel.css"];
 
 // Known insurer portal domains (for badge hint + auto-suggestions)
 const INSURER_DOMAINS = [
@@ -44,10 +34,21 @@ const INSURER_DOMAINS = [
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install") {
     console.log("[PracticePilot] Extension installed.");
-    // Set default badge
     chrome.action.setBadgeBackgroundColor({ color: "#2563EB" });
   } else if (details.reason === "update") {
     console.log("[PracticePilot] Extension updated to", chrome.runtime.getManifest().version);
+  }
+});
+
+// ── Open Side Panel on icon click ─────────────────────────
+
+chrome.action.onClicked.addListener(async (tab) => {
+  try {
+    await chrome.sidePanel.open({ windowId: tab.windowId });
+    // Also ensure content scripts are injected on this tab
+    if (tab.id) await ensureInjected(tab.id);
+  } catch (e) {
+    console.error("[PracticePilot] Failed to open side panel:", e.message);
   }
 });
 
@@ -78,22 +79,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             chrome.tabs.sendMessage(tabs[0].id, {
               type: "PP_EXTRACT",
               mode: msg.mode || "page",
-            });
-          }, 500);
-        }
-      })();
-      sendResponse({ ok: true });
-      break;
-
-    // Popup wants to show/hide the panel on the active tab
-    case "PP_TOGGLE_PANEL":
-      (async () => {
-        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tabs[0]?.id) {
-          await ensureInjected(tabs[0].id);
-          setTimeout(() => {
-            chrome.tabs.sendMessage(tabs[0].id, {
-              type: msg.show ? "PP_SHOW_PANEL" : "PP_HIDE_PANEL",
             });
           }, 500);
         }
@@ -137,10 +122,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       });
       return true; // async sendResponse
 
-    // Test API connection (forwarded from popup)
+    // Test API connection (forwarded from side panel)
     case "PP_TEST_CONNECTION":
       handleTestConnection(msg.config).then(sendResponse);
       return true; // async sendResponse
+
+    // Content script sends page update — relay to side panel
+    case "PP_PAGE_UPDATE":
+      // Side panel listens for this via chrome.runtime.onMessage
+      // No need to relay; the content script's sendMessage already
+      // reaches all extension pages including the side panel.
+      break;
   }
 
   return true;
@@ -169,12 +161,6 @@ async function ensureInjected(tabId) {
   }
 
   try {
-    // Inject CSS first
-    await chrome.scripting.insertCSS({
-      target: { tabId },
-      files: CONTENT_CSS,
-    });
-
     // Inject JS files in order
     await chrome.scripting.executeScript({
       target: { tabId },

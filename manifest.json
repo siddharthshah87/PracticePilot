@@ -1,6 +1,6 @@
 {
   "name": "PracticePilot",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "manifest_version": 3,
   "description": "In-page benefits breakdown assistant for dental practice management. Read-only guidance + copy helpers for eligibility and insurance workflows.",
   "icons": {
@@ -11,7 +11,8 @@
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "sidePanel"
   ],
   "host_permissions": [
     "https://*.curvehero.com/*"
@@ -21,30 +22,22 @@
   },
   "action": {
     "default_title": "PracticePilot",
-    "default_popup": "ui/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png"
     }
+  },
+  "side_panel": {
+    "default_path": "ui/sidepanel.html"
   },
   "content_scripts": [
     {
       "matches": ["https://*.curvehero.com/*"],
       "exclude_matches": ["https://*.sso.curvehero.com/*"],
       "js": [
-        "shared/phi-redactor.js",
-        "shared/normalize.js",
-        "shared/storage.js",
-        "shared/formatter.js",
-        "shared/cdt-codes.js",
-        "shared/patient-context.js",
-        "shared/action-engine.js",
-        "shared/llm-extractor.js",
         "content/page-detector.js",
-        "content/eligibility-parser.js",
         "content/main.js"
       ],
-      "css": ["content/panel.css"],
       "run_at": "document_idle"
     }
   ],
