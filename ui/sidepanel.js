@@ -25,6 +25,8 @@
   let isExtracting = false;
   let isChatting = false;
   let activeTabId = null;
+  let isScanning = false;
+  let pendingScanText = null;
 
   // ── DOM refs ────────────────────────────────────────────
 
@@ -270,14 +272,29 @@
   async function scanPatientAndShowActions(pageText) {
     if (!PP.patientContext || !pageText || pageText.length < 50) return;
 
+    // ── Concurrency guard: if a scan is already running, queue this one
+    if (isScanning) {
+      pendingScanText = pageText;
+      return;
+    }
+    isScanning = true;
+    pendingScanText = null;
+
     try {
       const newName = PP.patientContext._extractPatientName(pageText);
-      if (newName && lastPatientName && newName.toLowerCase() !== lastPatientName.toLowerCase()) {
+
+      // ── Detect patient switch → immediately update UI
+      const isPatientSwitch = newName && lastPatientName && newName.toLowerCase() !== lastPatientName.toLowerCase();
+      if (isPatientSwitch) {
         currentPatientCtx = null;
         currentCard = null;
         cardFromCache = false;
-        // Clear LLM cache when switching patients
         PP.llmContextExtractor?.clearCache();
+
+        // Immediately show new patient banner with loading state
+        updatePatientBanner(newName, "Loading…");
+        updateCoveragePills(null);
+        renderScanningState(newName);
       }
       lastPatientName = newName || lastPatientName;
 
@@ -297,7 +314,14 @@
 
       // scanAndMerge now returns { ctx, actions } — LLM-first, regex-fallback
       const result = await PP.patientContext.scanAndMerge(pageText, benefitCard);
-      if (!result) return;
+      if (!result) {
+        // If this was a patient switch and extraction failed, show empty state
+        if (isPatientSwitch) {
+          updatePatientBanner(newName, "Insurance unknown");
+          renderActions(PP.patientContext._emptyContext(newName), []);
+        }
+        return;
+      }
 
       const { ctx, actions } = result;
       currentPatientCtx = ctx;
@@ -321,7 +345,27 @@
       renderActions(ctx, actions);
     } catch (e) {
       console.warn("[PracticePilot SidePanel] Patient scan error:", e);
+    } finally {
+      isScanning = false;
+      // If a scan was queued while we were busy, process it now
+      if (pendingScanText) {
+        const queued = pendingScanText;
+        pendingScanText = null;
+        scanPatientAndShowActions(queued);
+      }
     }
+  }
+
+  function renderScanningState(patientName) {
+    bodyEl.innerHTML = `
+      <div class="pp-section" style="text-align: center; padding: 20px 0;">
+        <div style="font-size: 24px; margin-bottom: 8px;">⏳</div>
+        <p style="font-weight: 600; margin: 0;">Scanning ${escapeHTML(patientName)}…</p>
+        <p style="font-size: 12px; color: var(--pp-gray-500); margin: 4px 0 0;">
+          Analyzing patient data
+        </p>
+      </div>
+    `;
   }
 
   // ── Eligibility Page ────────────────────────────────────

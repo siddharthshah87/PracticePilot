@@ -78,9 +78,8 @@ PracticePilot.patientContext = {
     }
 
     // Track which sections the LLM detected
-    const detected = llmResult.context?.sectionsDetected || [];
-    // llmResult may have sectionsDetected at top level too
-    const topDetected = llmResult.sectionsDetected || detected;
+    // sectionsDetected lives at top level of LLM JSON, passed through as llmResult.sectionsDetected
+    const topDetected = llmResult.sectionsDetected || llmResult.context?.sectionsDetected || [];
     for (const s of topDetected) {
       if (!ctx.tabsScanned.includes(s)) {
         ctx.tabsScanned.push(s);

@@ -107,11 +107,12 @@
         const llmResult = await this._callLLM(config, cleanText, benefitCard);
         const parsed = this._parseJSON(llmResult);
 
-        // 8. Build result
+        // 8. Build result (preserve sectionsDetected from top-level JSON)
         const result = {
           patientName,
           context: parsed.context || {},
           actions: parsed.actions || [],
+          sectionsDetected: parsed.sectionsDetected || [],
           hash,
           fromCache: false,
         };
