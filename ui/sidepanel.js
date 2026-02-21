@@ -31,6 +31,13 @@
   const bodyEl = document.getElementById("pp-body");
   const badgeEl = document.getElementById("pp-page-badge");
   const settingsOverlay = document.getElementById("pp-settings-overlay");
+  const patientBanner = document.getElementById("pp-patient-banner");
+  const patientNameEl = document.getElementById("pp-patient-name");
+  const patientSubEl = document.getElementById("pp-patient-sub");
+  const patientAvatarEl = document.getElementById("pp-patient-avatar");
+  const coveragePillsEl = document.getElementById("pp-coverage-pills");
+  const chatLogEl = document.getElementById("pp-chat-log");
+  const chatInputEl = document.getElementById("pp-chat-input");
 
   // ── Settings ────────────────────────────────────────────
 
@@ -123,6 +130,79 @@
     setTimeout(() => { el.style.display = "none"; }, 4000);
   }
 
+  // ── Patient Banner ──────────────────────────────────────
+
+  function getInitials(name) {
+    if (!name) return "?";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return parts[0][0]?.toUpperCase() || "?";
+  }
+
+  function updatePatientBanner(name, subtitle) {
+    if (!name) {
+      patientBanner.style.display = "none";
+      return;
+    }
+    patientBanner.style.display = "";
+    patientNameEl.textContent = name;
+    patientSubEl.textContent = subtitle || "";
+    patientAvatarEl.textContent = getInitials(name);
+  }
+
+  function updateCoveragePills(card) {
+    if (!card) {
+      coveragePillsEl.innerHTML = "";
+      return;
+    }
+
+    let pills = [];
+
+    // Deductible & Max as small info pills
+    if (card.deductible?.individual) {
+      pills.push(`<span class="pp-coverage-pill pp-pill-deductible">Ded: $${escapeHTML(card.deductible.individual)}</span>`);
+    }
+    if (card.annualMax?.individual) {
+      pills.push(`<span class="pp-coverage-pill pp-pill-max">Max: $${escapeHTML(card.annualMax.individual)}</span>`);
+    }
+    if (card.annualMax?.remaining) {
+      pills.push(`<span class="pp-coverage-pill pp-pill-max">Rem: $${escapeHTML(card.annualMax.remaining)}</span>`);
+    }
+
+    // Coverage category pills
+    const categoryPillMap = {
+      "preventive": "pp-pill-preventive",
+      "diagnostic": "pp-pill-diagnostic",
+      "basic": "pp-pill-basic",
+      "major": "pp-pill-major",
+      "orthodontics": "pp-pill-ortho",
+      "ortho": "pp-pill-ortho",
+      "endodontics": "pp-pill-endo",
+      "endo": "pp-pill-endo",
+      "periodontics": "pp-pill-perio",
+      "perio": "pp-pill-perio",
+      "prosthodontics": "pp-pill-prostho",
+      "prostho": "pp-pill-prostho",
+    };
+
+    if (card.coverageTable?.length) {
+      for (const row of card.coverageTable) {
+        if (row.inNetwork == null) continue;
+        const cat = (row.category || "").toLowerCase();
+        const cls = categoryPillMap[cat] || "pp-pill-default";
+        const label = row.category.charAt(0).toUpperCase() + row.category.slice(1);
+        pills.push(`<span class="pp-coverage-pill ${cls}">${escapeHTML(label)} ${row.inNetwork}%</span>`);
+      }
+    }
+
+    coveragePillsEl.innerHTML = pills.join("");
+  }
+
+  function clearBanner() {
+    updatePatientBanner(null);
+    updateCoveragePills(null);
+  }
+
   // ── Message Handling ────────────────────────────────────
 
   // Receive page updates from content script (relayed via runtime)
@@ -156,6 +236,7 @@
       // Content script not injected on this tab — show idle
       currentPageType = null;
       updateBadge("");
+      clearBanner();
       renderIdle();
     }
   }
@@ -179,6 +260,7 @@
     } else if (currentPageType === PT.INSURER_PORTAL) {
       renderInsurerPortal(data.insurerName);
     } else if (!currentCard && !isExtracting) {
+      clearBanner();
       renderIdle();
     }
   }
@@ -215,6 +297,11 @@
           cardFromCache = true;
         }
       }
+
+      // Update the persistent patient banner
+      const insuranceLabel = [ctx.insurance.carrier, ctx.insurance.planName].filter(Boolean).join(" · ") || "Insurance unknown";
+      updatePatientBanner(ctx.patientName, insuranceLabel);
+      updateCoveragePills(benefitCard);
 
       const actions = PP.actionEngine.generate(ctx, benefitCard);
       renderActions(ctx, actions);
@@ -340,8 +427,8 @@
   // ── Chat ────────────────────────────────────────────────
 
   async function handleChatSend() {
-    const input = document.getElementById("pp-chat-input");
-    const log = document.getElementById("pp-chat-log");
+    const input = chatInputEl;
+    const log = chatLogEl;
     if (!input || !log) return;
 
     const question = input.value.trim();
@@ -527,7 +614,6 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
   function renderActions(ctx, actions) {
     if (!ctx) { renderIdle(); return; }
 
-    const name = escapeHTML(ctx.patientName || "Patient");
     const scannedTabs = ctx.tabsScanned.map(t => t.charAt(0).toUpperCase() + t.slice(1));
     const scannedLabel = scannedTabs.length ? scannedTabs.join(", ") : "none yet";
 
@@ -568,7 +654,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
     bodyEl.innerHTML = `
       <div class="pp-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-          <div class="pp-section-title" style="margin: 0;">📋 ${name}</div>
+          <div class="pp-section-title" style="margin: 0;">⚡ Actions</div>
           <button class="pp-btn pp-btn-sm" data-action="rescan-patient" title="Re-scan page">🔄</button>
         </div>
         <div class="pp-scanned-tabs">Scanned: ${escapeHTML(scannedLabel)}</div>
@@ -577,20 +663,18 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
         <div class="pp-actions-list">${criticalHTML}${otherHTML}${noActions}</div>
         ${benefitLink}
       </div>
-      <div class="pp-section pp-chat-section">
-        <div class="pp-chat-log" id="pp-chat-log"></div>
-        <div class="pp-chat-input-row">
-          <input type="text" class="pp-chat-input" id="pp-chat-input"
-            placeholder="Ask about this patient…" autocomplete="off" />
-          <button class="pp-btn pp-btn-sm pp-btn-primary pp-chat-send" data-action="chat-send" title="Send">➤</button>
-        </div>
-      </div>
+      ${buildCDTLookupSection()}
     `;
     wireActions();
   }
 
   function renderResult(card, missingItems, extra = {}) {
     if (!card) { renderIdle(); return; }
+
+    // Update banner with patient + plan info
+    const subtitle = [card.payer, card.planName].filter(Boolean).join(" · ") || "";
+    updatePatientBanner(card.patientName || currentPatientCtx?.patientName, subtitle || "Benefits extracted");
+    updateCoveragePills(card);
 
     const summary = PP.formatter.compactSummary(card);
     const confidence = card.confidence?.overall || "medium";
@@ -640,34 +724,39 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
       ? `<div class="pp-section"><div class="pp-section-title">⚠️ Missing / Unverified</div><ul class="pp-checklist">${missingItems.map(m => `<li>${m}</li>`).join("")}</ul></div>`
       : "";
 
+    // Build benefit summary cards (deductible + max)
+    const benefitCards = `
+      <div class="pp-benefit-grid">
+        <div class="pp-benefit-card">
+          <div class="pp-benefit-card-label">Deductible</div>
+          <div class="pp-benefit-card-value${!card.deductible?.individual ? ' pp-missing' : ''}">${card.deductible?.individual ? '$' + escapeHTML(card.deductible.individual) : '—'}</div>
+        </div>
+        <div class="pp-benefit-card">
+          <div class="pp-benefit-card-label">Annual Max</div>
+          <div class="pp-benefit-card-value${!card.annualMax?.individual ? ' pp-missing' : ''}">${card.annualMax?.individual ? '$' + escapeHTML(card.annualMax.individual) : '—'}</div>
+        </div>
+        ${card.annualMax?.remaining ? `<div class="pp-benefit-card"><div class="pp-benefit-card-label">Remaining</div><div class="pp-benefit-card-value">$${escapeHTML(card.annualMax.remaining)}</div></div>` : ''}
+        ${card.annualMax?.used ? `<div class="pp-benefit-card"><div class="pp-benefit-card-label">Used</div><div class="pp-benefit-card-value">$${escapeHTML(card.annualMax.used)}</div></div>` : ''}
+      </div>
+    `;
+
     bodyEl.innerHTML = `
       ${cacheBar}
       <div class="pp-section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <div class="pp-section-title" style="margin: 0;">Quick Summary</div>
+          <div class="pp-section-title" style="margin: 0;">Benefits Overview</div>
           ${confidenceBadge}
         </div>
-        <div class="pp-card"><pre>${escapeHTML(summary)}</pre></div>
+        ${benefitCards}
       </div>
       <div class="pp-section">
-        <div class="pp-section-title">Plan Information</div>
+        <div class="pp-section-title">Plan Details</div>
         <div class="pp-data-grid">
-          ${card.patientName ? `<div class="pp-data-label">Patient</div><div class="pp-data-value" style="font-weight: 700;">${escapeHTML(card.patientName)}</div>` : ""}
           ${card.subscriberId ? `<div class="pp-data-label">Subscriber ID</div><div class="pp-data-value">${escapeHTML(card.subscriberId)}</div>` : ""}
           ${card.payer ? `<div class="pp-data-label">Carrier</div><div class="pp-data-value">${escapeHTML(card.payer)}</div>` : ""}
           ${card.planName ? `<div class="pp-data-label">Plan</div><div class="pp-data-value">${escapeHTML(card.planName)}</div>` : ""}
           ${card.planType ? `<div class="pp-data-label">Type</div><div class="pp-data-value">${escapeHTML(card.planType)}</div>` : ""}
           ${card.groupNumber ? `<div class="pp-data-label">Group #</div><div class="pp-data-value">${escapeHTML(card.groupNumber)}</div>` : ""}
-        </div>
-      </div>
-      <div class="pp-section">
-        <div class="pp-section-title">Deductible & Maximum</div>
-        <div class="pp-data-grid">
-          <div class="pp-data-label">Deductible</div>
-          <div class="pp-data-value${!card.deductible?.individual ? " pp-missing" : ""}">${card.deductible?.individual ? "$" + escapeHTML(card.deductible.individual) : "Not found"}</div>
-          <div class="pp-data-label">Annual Max</div>
-          <div class="pp-data-value${!card.annualMax?.individual ? " pp-missing" : ""}">${card.annualMax?.individual ? "$" + escapeHTML(card.annualMax.individual) : "Not found"}</div>
-          ${card.annualMax?.remaining ? `<div class="pp-data-label">Max Remaining</div><div class="pp-data-value">$${escapeHTML(card.annualMax.remaining)}</div>` : ""}
         </div>
       </div>
       ${covRows ? `<div class="pp-section"><div class="pp-section-title">Coverage Table (CDT)</div><div class="pp-data-grid">${covRows}</div></div>` : ""}
@@ -813,11 +902,12 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
     // Wire CDT search
     const cdtInput = document.querySelector(".pp-cdt-search");
     if (cdtInput) cdtInput.addEventListener("input", handleCDTSearchInput);
+  }
 
-    // Wire chat input
-    const chatInput = document.getElementById("pp-chat-input");
-    if (chatInput) {
-      chatInput.addEventListener("keydown", (e) => {
+  /** Wire the fixed chat bar (called once on init) */
+  function wireChatBar() {
+    if (chatInputEl) {
+      chatInputEl.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChatSend(); }
       });
     }
@@ -955,6 +1045,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
   async function init() {
     console.log("[PracticePilot SidePanel] Initializing");
     initSettings();
+    wireChatBar();
 
     // Get the active tab and request page data
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

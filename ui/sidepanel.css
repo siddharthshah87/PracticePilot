@@ -2,8 +2,7 @@
    PracticePilot — Side Panel Styles
    ============================================================
    Styles for the Chrome Side Panel extension page.
-   Adapted from panel.css — no fixed positioning needed since
-   the panel fills the native Chrome side panel area.
+   Layout: header → patient banner → scrollable body → chat bar
    ============================================================ */
 
 :root {
@@ -48,9 +47,9 @@ html, body {
   background: #fff;
 }
 
-/* ── Layout ────────────────────────────────────────────── */
+/* ── Root layout (flex column, full height) ────────────── */
 
-#pp-wrapper {
+#pp-root {
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -83,6 +82,7 @@ html, body {
   border-radius: 10px;
   font-weight: 500;
   display: none;
+  margin-left: 8px;
 }
 
 .pp-header-actions {
@@ -110,17 +110,199 @@ html, body {
   background: rgba(255,255,255,0.35);
 }
 
+/* ── Patient Banner ────────────────────────────────────── */
+
+.pp-patient-banner {
+  flex-shrink: 0;
+  padding: 10px 14px 8px;
+  background: var(--pp-gray-50);
+  border-bottom: 1px solid var(--pp-gray-200);
+}
+
+.pp-patient-banner-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pp-patient-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--pp-blue);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.pp-patient-name {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--pp-gray-900);
+  line-height: 1.2;
+}
+
+.pp-patient-sub {
+  font-size: 12px;
+  color: var(--pp-gray-500);
+  line-height: 1.3;
+  margin-top: 1px;
+}
+
+.pp-patient-info {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Coverage pills */
+
+.pp-coverage-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.pp-coverage-pills:empty {
+  display: none;
+}
+
+.pp-coverage-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.pp-pill-preventive { background: #dcfce7; color: #166534; }
+.pp-pill-basic      { background: #dbeafe; color: #1e40af; }
+.pp-pill-major      { background: #fef3c7; color: #92400e; }
+.pp-pill-diagnostic { background: #f0fdf4; color: #14532d; }
+.pp-pill-ortho      { background: #ede9fe; color: #5b21b6; }
+.pp-pill-endo       { background: #fff7ed; color: #9a3412; }
+.pp-pill-perio      { background: #fdf2f8; color: #9d174d; }
+.pp-pill-prostho    { background: #f5f3ff; color: #4c1d95; }
+.pp-pill-default    { background: var(--pp-gray-100); color: var(--pp-gray-700); }
+
+.pp-pill-deductible,
+.pp-pill-max {
+  background: var(--pp-gray-100);
+  color: var(--pp-gray-700);
+  font-weight: 500;
+  border: 1px solid var(--pp-gray-200);
+}
+
 /* ── Body (scrollable content area) ────────────────────── */
 
 .pp-body {
   flex: 1;
   overflow-y: auto;
   padding: 12px 14px;
+  min-height: 0; /* critical for flex scroll */
 }
 
 .pp-body::-webkit-scrollbar { width: 4px; }
 .pp-body::-webkit-scrollbar-track { background: transparent; }
 .pp-body::-webkit-scrollbar-thumb { background: var(--pp-gray-300); border-radius: 2px; }
+
+/* ── Fixed Chat Bar (bottom) ───────────────────────────── */
+
+.pp-chat-bar {
+  flex-shrink: 0;
+  border-top: 1px solid var(--pp-gray-200);
+  padding: 8px 14px 10px;
+  background: #fff;
+}
+
+.pp-chat-bar .pp-chat-log {
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.pp-chat-bar .pp-chat-log:empty {
+  display: none;
+  margin: 0;
+}
+
+.pp-chat-msg {
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 6px 10px;
+  border-radius: var(--pp-radius-sm);
+  max-width: 90%;
+  word-wrap: break-word;
+}
+
+.pp-chat-user {
+  align-self: flex-end;
+  background: var(--pp-blue);
+  color: #fff;
+}
+
+.pp-chat-bot {
+  align-self: flex-start;
+  background: var(--pp-gray-100);
+  color: var(--pp-gray-900);
+}
+
+.pp-chat-typing {
+  color: var(--pp-gray-500);
+  font-style: italic;
+}
+
+.pp-chat-error {
+  color: var(--pp-red);
+  background: var(--pp-red-bg);
+}
+
+.pp-chat-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.pp-chat-input {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 12px;
+  border: 1px solid var(--pp-gray-200);
+  border-radius: var(--pp-radius-sm);
+  outline: none;
+  font-family: var(--pp-font);
+  background: #fff;
+  color: var(--pp-gray-900);
+  transition: border-color 0.15s;
+}
+
+.pp-chat-input:focus {
+  border-color: var(--pp-blue);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.pp-chat-input::placeholder {
+  color: var(--pp-gray-400);
+}
+
+.pp-chat-send {
+  padding: 6px 10px !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  flex-shrink: 0;
+}
 
 /* ── Section ───────────────────────────────────────────── */
 
@@ -331,7 +513,7 @@ html, body {
 
 .pp-toast {
   position: fixed;
-  bottom: 16px;
+  bottom: 60px;
   left: 50%;
   transform: translateX(-50%) translateY(10px);
   background: var(--pp-gray-900);
@@ -676,93 +858,6 @@ html, body {
   color: var(--pp-blue);
 }
 
-/* ── Chat section ──────────────────────────────────────── */
-
-.pp-chat-section {
-  border-top: 1px solid var(--pp-gray-200);
-  padding-top: 8px !important;
-}
-
-.pp-chat-log {
-  max-height: 180px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-
-.pp-chat-log:empty {
-  display: none;
-  margin: 0;
-}
-
-.pp-chat-msg {
-  font-size: 12px;
-  line-height: 1.45;
-  padding: 6px 10px;
-  border-radius: var(--pp-radius-sm);
-  max-width: 90%;
-  word-wrap: break-word;
-}
-
-.pp-chat-user {
-  align-self: flex-end;
-  background: var(--pp-blue);
-  color: #fff;
-}
-
-.pp-chat-bot {
-  align-self: flex-start;
-  background: var(--pp-gray-100);
-  color: var(--pp-gray-900);
-}
-
-.pp-chat-typing {
-  color: var(--pp-gray-500);
-  font-style: italic;
-}
-
-.pp-chat-error {
-  color: var(--pp-red);
-  background: var(--pp-red-bg);
-}
-
-.pp-chat-input-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.pp-chat-input {
-  flex: 1;
-  padding: 7px 10px;
-  font-size: 12px;
-  border: 1px solid var(--pp-gray-200);
-  border-radius: var(--pp-radius-sm);
-  outline: none;
-  font-family: var(--pp-font);
-  background: #fff;
-  color: var(--pp-gray-900);
-  transition: border-color 0.15s;
-}
-
-.pp-chat-input:focus {
-  border-color: var(--pp-blue);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
-}
-
-.pp-chat-input::placeholder {
-  color: var(--pp-gray-300);
-}
-
-.pp-chat-send {
-  padding: 6px 10px !important;
-  font-size: 14px !important;
-  line-height: 1 !important;
-  flex-shrink: 0;
-}
-
 /* ── Settings overlay ──────────────────────────────────── */
 
 .pp-settings-overlay {
@@ -776,38 +871,48 @@ html, body {
   padding: 20px;
 }
 
-.pp-settings-card {
+.pp-settings-panel {
   background: #fff;
   border-radius: var(--pp-radius);
   width: 100%;
   max-width: 340px;
-  padding: 20px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.18);
+  overflow: hidden;
 }
 
-.pp-settings-card h3 {
-  margin: 0 0 16px;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--pp-gray-900);
+.pp-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--pp-gray-200);
 }
 
-.pp-settings-field {
-  margin-bottom: 12px;
+.pp-settings-header .pp-header-btn {
+  background: var(--pp-gray-100);
+  color: var(--pp-gray-700);
 }
 
-.pp-settings-field label {
+.pp-settings-body {
+  padding: 16px;
+}
+
+.pp-label {
   display: block;
   font-size: 12px;
   font-weight: 600;
   color: var(--pp-gray-500);
   margin-bottom: 4px;
+  margin-top: 10px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
-.pp-settings-field select,
-.pp-settings-field input {
+.pp-label:first-child {
+  margin-top: 0;
+}
+
+.pp-input {
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--pp-gray-200);
@@ -819,16 +924,9 @@ html, body {
   transition: border-color 0.15s;
 }
 
-.pp-settings-field select:focus,
-.pp-settings-field input:focus {
+.pp-input:focus {
   border-color: var(--pp-blue);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
-}
-
-.pp-settings-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
 }
 
 .pp-settings-msg {
@@ -849,3 +947,44 @@ html, body {
   background: var(--pp-red-bg);
   color: var(--pp-red);
 }
+
+/* ── Benefit summary grid (used in renderResult) ───────── */
+
+.pp-benefit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pp-benefit-card {
+  background: var(--pp-gray-50);
+  border: 1px solid var(--pp-gray-200);
+  border-radius: var(--pp-radius-sm);
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.pp-benefit-card-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+  color: var(--pp-gray-500);
+  margin-bottom: 2px;
+}
+
+.pp-benefit-card-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--pp-gray-900);
+  line-height: 1.2;
+}
+
+.pp-benefit-card-value.pp-missing {
+  color: var(--pp-red);
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 400;
+}
+

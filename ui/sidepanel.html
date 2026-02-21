@@ -17,11 +17,35 @@
         <button class="pp-header-btn" id="pp-settings-btn" title="Settings">⚙</button>
       </div>
     </div>
+
+    <!-- Patient banner (shown when patient detected) -->
+    <div id="pp-patient-banner" class="pp-patient-banner" style="display: none;">
+      <div class="pp-patient-banner-row">
+        <div class="pp-patient-avatar" id="pp-patient-avatar">?</div>
+        <div class="pp-patient-info">
+          <div class="pp-patient-name" id="pp-patient-name"></div>
+          <div class="pp-patient-sub" id="pp-patient-sub"></div>
+        </div>
+      </div>
+      <div class="pp-coverage-pills" id="pp-coverage-pills"></div>
+    </div>
+
+    <!-- Scrollable main body -->
     <div class="pp-body" id="pp-body">
       <div class="pp-empty">
         <div class="pp-empty-icon">🦷</div>
         <p><strong>PracticePilot</strong></p>
         <p>Navigate to a Curve Dental page to get started.</p>
+      </div>
+    </div>
+
+    <!-- Fixed chat bar at bottom -->
+    <div id="pp-chat-bar" class="pp-chat-bar">
+      <div class="pp-chat-log" id="pp-chat-log"></div>
+      <div class="pp-chat-input-row">
+        <input type="text" class="pp-chat-input" id="pp-chat-input"
+          placeholder="Ask about this patient…" autocomplete="off" />
+        <button class="pp-btn pp-btn-sm pp-btn-primary pp-chat-send" data-action="chat-send" title="Send">➤</button>
       </div>
     </div>
   </div>
