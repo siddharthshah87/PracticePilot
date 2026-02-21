@@ -210,6 +210,7 @@
   // Receive page updates from content script (relayed via runtime)
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === "PP_PAGE_UPDATE") {
+      console.log("[PracticePilot SidePanel] Received PP_PAGE_UPDATE, pageType:", msg.pageType);
       handlePageUpdate(msg, sender.tab?.id);
     }
   });
@@ -226,6 +227,26 @@
       requestPageData(tabId);
     }
   });
+
+  // ── Polling fallback ──────────────────────────────────────
+  // Safety net: poll the active tab every 3 seconds in case
+  // message-based updates don't reach the side panel.
+  let _pollTimer = null;
+  function startPolling() {
+    if (_pollTimer) return;
+    _pollTimer = setInterval(async () => {
+      if (!activeTabId || isScanning) return;
+      try {
+        const response = await chrome.tabs.sendMessage(activeTabId, { type: "PP_GET_PAGE_DATA" });
+        if (response?.pageType) {
+          handlePageUpdate(response, activeTabId);
+        }
+      } catch (_) {
+        // Content script not available on this tab — ignore
+      }
+    }, 3000);
+  }
+  startPolling();
 
   /** Request page data from the active tab's content script */
   async function requestPageData(tabId) {
@@ -282,6 +303,7 @@
 
     try {
       const newName = PP.patientContext._extractPatientName(pageText);
+      console.log("[PracticePilot SidePanel] Extracted name:", newName, "| last:", lastPatientName, "| isScanning:", isScanning);
 
       // ── Detect patient switch → immediately update UI
       const isPatientSwitch = newName && lastPatientName && newName.toLowerCase() !== lastPatientName.toLowerCase();
@@ -314,6 +336,7 @@
 
       // scanAndMerge now returns { ctx, actions } — LLM-first, regex-fallback
       const result = await PP.patientContext.scanAndMerge(pageText, benefitCard);
+      console.log("[PracticePilot SidePanel] scanAndMerge result:", result ? "OK" : "null", result?.ctx?.patientName);
       if (!result) {
         // If this was a patient switch and extraction failed, show empty state
         if (isPatientSwitch) {

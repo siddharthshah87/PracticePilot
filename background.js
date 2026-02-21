@@ -129,13 +129,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     // Content script sends page update — relay to side panel
     case "PP_PAGE_UPDATE":
-      // Side panel listens for this via chrome.runtime.onMessage
-      // No need to relay; the content script's sendMessage already
-      // reaches all extension pages including the side panel.
-      break;
+      // Side panel listens for this via chrome.runtime.onMessage.
+      // The content script's sendMessage already reaches all extension
+      // pages including the side panel. No relay needed.
+      // Return false so Chrome doesn't keep the channel open.
+      return false;
   }
 
-  return true;
+  // Only return true for explicitly async cases (handled above with their own return true).
+  // For unhandled message types, return false.
+  return false;
 });
 
 // ── On-demand injection for non-Curve pages ──────────────
