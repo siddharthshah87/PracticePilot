@@ -106,8 +106,51 @@ html, body {
   transition: background 0.15s;
 }
 
+.pp-back-btn {
+  font-size: 11px !important;
+  font-weight: 600;
+  width: auto !important;
+  padding: 0 8px !important;
+  letter-spacing: 0.1px;
+}
+
 .pp-header-btn:hover {
   background: rgba(255,255,255,0.35);
+}
+
+/* ── Scan Bar ──────────────────────────────────────────── */
+
+.pp-scan-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  background: var(--pp-blue-light);
+  border-bottom: 1px solid #bfdbfe;
+}
+
+.pp-scan-btn {
+  width: 100%;
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--pp-blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--pp-radius-sm);
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  letter-spacing: 0.2px;
+}
+
+.pp-scan-btn:hover:not(:disabled) {
+  background: var(--pp-blue-dark);
+}
+
+.pp-scan-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 /* ── Patient Banner ────────────────────────────────────── */
@@ -302,6 +345,24 @@ html, body {
 .pp-chat-error {
   color: var(--pp-red);
   background: var(--pp-red-bg);
+}
+
+.pp-chat-context {
+  align-self: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--pp-gray-500);
+  background: var(--pp-gray-100);
+  border: 1px solid var(--pp-gray-200);
+  border-radius: 10px;
+  padding: 3px 10px;
+  text-align: center;
+  max-width: 100%;
+}
+
+.pp-chat-ctx-sub {
+  color: var(--pp-gray-400);
+  font-weight: 400;
 }
 
 .pp-chat-input-row {

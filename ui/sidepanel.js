@@ -31,11 +31,13 @@
   let activeView = "actions";        // "actions" | "benefits"
   let cachedActionsHTML = null;       // so we can switch back without re-rendering
   let cachedBenefitsHTML = null;
+  let chatPatientName = null;         // whose context is currently loaded in chat
 
   // ── DOM refs ────────────────────────────────────────────
 
   const bodyEl = document.getElementById("pp-body");
   const badgeEl = document.getElementById("pp-page-badge");
+  const backBtn = document.getElementById("pp-back-btn");
   const settingsOverlay = document.getElementById("pp-settings-overlay");
   const patientBanner = document.getElementById("pp-patient-banner");
   const patientNameEl = document.getElementById("pp-patient-name");
@@ -61,6 +63,24 @@
     document.getElementById("pp-save-settings").addEventListener("click", saveSettings);
     document.getElementById("pp-test-connection").addEventListener("click", testConnection);
     document.getElementById("pp-provider").addEventListener("change", onProviderChange);
+
+    if (backBtn) {
+      backBtn.addEventListener("click", () => {
+        // Reset patient state and return to idle / recent patients
+        currentPatientCtx = null;
+        currentCard = null;
+        cardFromCache = false;
+        lastPatientName = null;
+        lastSectionsDetected = [];
+        cachedActionsHTML = null;
+        cachedBenefitsHTML = null;
+        PP.llmContextExtractor?.clearCache();
+        clearBanner();
+        activeView = "actions";
+        updateViewTabs();
+        renderIdle();
+      });
+    }
   }
 
   async function openSettings() {
@@ -137,6 +157,25 @@
     setTimeout(() => { el.style.display = "none"; }, 4000);
   }
 
+  // ── Chat Context ────────────────────────────────────────
+
+  /**
+   * Clear the chat log and show a context-loaded indicator.
+   * Called whenever the active patient changes.
+   */
+  function clearChatForPatient(name, subtitle) {
+    if (!chatLogEl) return;
+    chatPatientName = name || null;
+    chatLogEl.innerHTML = "";
+    if (name) {
+      const label = subtitle
+        ? `${escapeHTML(name)} <span class="pp-chat-ctx-sub">— ${escapeHTML(subtitle)}</span>`
+        : escapeHTML(name);
+      chatLogEl.innerHTML = `<div class="pp-chat-context">🦷 ${label}</div>`;
+      chatLogEl.scrollTop = 0;
+    }
+  }
+
   // ── Patient Banner ──────────────────────────────────────
 
   function getInitials(name) {
@@ -149,9 +188,11 @@
   function updatePatientBanner(name, subtitle) {
     if (!name) {
       patientBanner.style.display = "none";
+      if (backBtn) backBtn.style.display = "none";
       return;
     }
     patientBanner.style.display = "";
+    if (backBtn) backBtn.style.display = "";
     patientNameEl.textContent = name;
     patientSubEl.textContent = subtitle || "";
     patientAvatarEl.textContent = getInitials(name);
@@ -264,39 +305,148 @@
       // Content script not injected on this tab — show idle
       currentPageType = null;
       updateBadge("");
+      updateScanButton();
       clearBanner();
       renderIdle();
     }
   }
 
-  /** Handle incoming page data from content script */
+  /** Handle incoming page data from content script — passive state update + cache pre-load */
   async function handlePageUpdate(data, tabId) {
     if (tabId) activeTabId = tabId;
     currentPageType = data.pageType || null;
     updateBadge(getPageLabel(currentPageType));
+    updateScanButton();
+    await tryLoadCachedForPage(data);
+  }
+
+  /**
+   * Silently pre-populate the panel from cache whenever the page changes.
+   * No LLM call — cache reads only. Guards against re-rendering what’s already shown.
+   */
+  async function tryLoadCachedForPage(data) {
+    if (!data.pageText || data.pageText.length < 50) return;
+    if (isScanning || isExtracting) return;
+
+    const PT_PATIENT     = ["patient_view", "patient_chart", "claims"];
+    const PT_ELIGIBILITY = ["eligibility", "insurer_portal"];
+
+    if (PT_PATIENT.includes(data.pageType)) {
+      // Quick regex name extraction (no LLM)
+      const name = PP.patientContext?._extractPatientName(data.pageText);
+      if (!name) return;
+
+      // Already showing this patient — don’t clobber an active or already-loaded view
+      if (currentPatientCtx?.patientName?.toLowerCase() === name.toLowerCase()) return;
+      if (currentCard?.patientName?.toLowerCase() === name.toLowerCase()) return;
+
+      // Cache lookup
+      const cacheKey = PP.storage.cacheKeyFromIdentifiers(name, null, null);
+      let cached = await PP.storage.getCachedCard(cacheKey);
+      // Fallback: try name + null carrier (broader match)
+      if (!cached) {
+        const allCards = await PP.storage.getAllCachedCards();
+        const match = allCards.find(e => e.card.patientName?.toLowerCase() === name.toLowerCase());
+        if (match) cached = match;
+      }
+
+      if (!cached) return;
+
+      currentCard = cached.card;
+      cardFromCache = true;
+      const age = Math.floor((Date.now() - new Date(cached.cachedAt).getTime()) / 86400000);
+      const sub = [cached.card.payer, cached.card.planName].filter(Boolean).join(" · ") || "";
+
+      if (name.toLowerCase() !== (chatPatientName || "").toLowerCase()) {
+        clearChatForPatient(name, sub || null);
+      }
+      const missing = PP.normalize.missingItems(currentCard);
+      renderResult(currentCard, missing, { cached: true, cachedAt: cached.cachedAt, ageDays: age });
+
+    } else if (PT_ELIGIBILITY.includes(data.pageType)) {
+      // Already showing a card? skip.
+      if (currentCard) return;
+
+      const patientName  = PP.phiRedactor.extractPatientName(data.pageText);
+      const subscriberId = PP.phiRedactor.extractSubscriberId(data.pageText);
+      if (!patientName && !subscriberId) return;
+
+      const payerHint = extractPayerHint(data.pageText);
+      const cacheKey  = PP.storage.cacheKeyFromIdentifiers(patientName, subscriberId, payerHint);
+      if (!cacheKey) return;
+
+      const cached = await PP.storage.getCachedCard(cacheKey);
+      if (!cached) return;
+
+      currentCard = cached.card;
+      cardFromCache = true;
+      const age = Math.floor((Date.now() - new Date(cached.cachedAt).getTime()) / 86400000);
+      const missing = PP.normalize.missingItems(currentCard);
+      renderResult(currentCard, missing, { cached: true, cachedAt: cached.cachedAt, ageDays: age });
+    }
+  }
+
+  /** Update scan button label to hint at current page context */
+  function updateScanButton() {
+    const scanBtn = document.getElementById("pp-scan-btn");
+    if (!scanBtn) return;
+    const hints = {
+      eligibility:    "🔍 Extract Benefits",
+      insurer_portal: "🔍 Extract Benefits",
+      patient_view:   "🔍 Scan Patient",
+      patient_chart:  "🔍 Scan Patient",
+      claims:         "🔍 Scan Patient",
+    };
+    scanBtn.textContent = hints[currentPageType] || "🔍 Scan Page";
+  }
+
+  /** Manual scan triggered by the Scan Page button */
+  async function handleScanPage() {
+    const scanBtn = document.getElementById("pp-scan-btn");
+    if (scanBtn) { scanBtn.disabled = true; scanBtn.textContent = "⏳ Scanning…"; }
+
+    let data;
+    try {
+      if (activeTabId) {
+        data = await chrome.tabs.sendMessage(activeTabId, { type: "PP_GET_PAGE_DATA" });
+      }
+    } catch (e) {
+      showToast("Cannot reach page — try reloading the tab.");
+      if (scanBtn) { scanBtn.disabled = false; updateScanButton(); }
+      return;
+    }
+
+    if (!data) {
+      showToast("No page data available. Navigate to a supported page first.");
+      if (scanBtn) { scanBtn.disabled = false; updateScanButton(); }
+      return;
+    }
+
+    currentPageType = data.pageType || null;
+    updateBadge(getPageLabel(currentPageType));
 
     const PT = {
-      ELIGIBILITY: "eligibility",
-      PATIENT_VIEW: "patient_view",
+      ELIGIBILITY:   "eligibility",
+      PATIENT_VIEW:  "patient_view",
       INSURER_PORTAL: "insurer_portal",
-      PATIENT_CHART: "patient_chart",
-      CLAIMS: "claims",
+      PATIENT_CHART:  "patient_chart",
+      CLAIMS:         "claims",
     };
 
-    // All patient-related page types trigger scanning
     const isPatientPage = [
       PT.PATIENT_VIEW, PT.PATIENT_CHART, PT.CLAIMS,
     ].includes(currentPageType);
 
-    if (isPatientPage) {
-      await scanPatientAndShowActions(data.pageText);
-    } else if (currentPageType === PT.ELIGIBILITY) {
-      await handleEligibilityPage(data.pageText);
-    } else if (currentPageType === PT.INSURER_PORTAL) {
-      renderInsurerPortal(data.insurerName);
-    } else if (!currentCard && !isExtracting) {
-      clearBanner();
-      renderIdle();
+    try {
+      if (isPatientPage) {
+        await scanPatientAndShowActions(data.pageText);
+      } else if (currentPageType === PT.ELIGIBILITY || currentPageType === PT.INSURER_PORTAL) {
+        await handleEligibilityPage(data.pageText, data.insurerName);
+      } else {
+        showToast("Navigate to a patient, eligibility, or insurer portal page first.");
+      }
+    } finally {
+      if (scanBtn) { scanBtn.disabled = false; updateScanButton(); }
     }
   }
 
@@ -379,6 +529,11 @@
       updatePatientBanner(ctx.patientName, insuranceLabel);
       updateCoveragePills(benefitCard);
 
+      // Clear chat log whenever a different patient is loaded
+      if (ctx.patientName && ctx.patientName.toLowerCase() !== (chatPatientName || "").toLowerCase()) {
+        clearChatForPatient(ctx.patientName, insuranceLabel !== "Insurance unknown" ? insuranceLabel : null);
+      }
+
       renderActions(ctx, actions);
     } catch (e) {
       console.warn("[PracticePilot SidePanel] Patient scan error:", e);
@@ -407,7 +562,7 @@
 
   // ── Eligibility Page ────────────────────────────────────
 
-  async function handleEligibilityPage(pageText) {
+  async function handleEligibilityPage(pageText, insurerName) {
     // Try loading from cache first
     if (pageText) {
       const patientName = PP.phiRedactor.extractPatientName(pageText);
@@ -429,17 +584,15 @@
       }
     }
 
-    // No cache hit — show eligibility UI
-    renderEligibility();
+    // No cache hit — show eligibility UI briefly then extract
+    renderEligibility(insurerName);
 
-    // Auto-extract if key is set
+    // Extract immediately (user clicked Scan — no need for auto-delay)
     const config = await PP.llmExtractor.getConfig();
     if (config.apiKey && pageText && pageText.length > 50) {
-      setTimeout(() => {
-        if (!currentCard && !isExtracting) {
-          captureAndExtract("page", pageText);
-        }
-      }, 1200);
+      if (!currentCard && !isExtracting) {
+        captureAndExtract("page", pageText);
+      }
     } else if (!config.apiKey) {
       renderNoKey();
     }
@@ -623,7 +776,7 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
       <div class="pp-empty">
         <div class="pp-empty-icon">🦷</div>
         <p><strong>PracticePilot</strong></p>
-        <p>Navigate to an eligibility page in Curve or an insurance company portal to extract benefits.</p>
+        <p>Navigate to an eligibility page in Curve or an insurance company portal, then click <strong>Scan Page</strong>.</p>
         <div class="pp-btn-group" style="justify-content: center; margin-top: 12px;">
           <button class="pp-btn" data-action="capture-selection">✂️ Capture Selection</button>
           <button class="pp-btn" data-action="capture-page">📄 Capture This Page</button>
@@ -1037,8 +1190,14 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
 
     // Update banner with patient + plan info
     const subtitle = [card.payer, card.planName].filter(Boolean).join(" · ") || "";
-    updatePatientBanner(card.patientName || currentPatientCtx?.patientName, subtitle || "Benefits extracted");
+    const bannerName = card.patientName || currentPatientCtx?.patientName;
+    updatePatientBanner(bannerName, subtitle || "Benefits extracted");
     updateCoveragePills(card);
+
+    // Clear chat log if this is a different patient's benefits
+    if (bannerName && bannerName.toLowerCase() !== (chatPatientName || "").toLowerCase()) {
+      clearChatForPatient(bannerName, subtitle || null);
+    }
 
     const summary = PP.formatter.compactSummary(card);
     const confidence = card.confidence?.overall || "medium";
@@ -1320,6 +1479,9 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
 
     const action = target.dataset.action;
     switch (action) {
+      case "scan-page":
+        handleScanPage();
+        break;
       case "capture-page":
         captureAndExtract("page");
         break;
@@ -1363,8 +1525,14 @@ ${contextParts.length ? contextParts.join("\n") : "No patient data scanned yet."
           cardFromCache = true;
           const ageDays = Math.floor((Date.now() - new Date(entry.cachedAt).getTime()) / 86400000);
           const missingItems = PP.normalize.missingItems(currentCard);
+          // Clear chat before renderResult so context indicator shows the right patient
+          const cachedName = currentCard.patientName;
+          const cachedSub = [currentCard.payer, currentCard.planName].filter(Boolean).join(" · ") || null;
+          if (cachedName && cachedName.toLowerCase() !== (chatPatientName || "").toLowerCase()) {
+            clearChatForPatient(cachedName, cachedSub);
+          }
           renderResult(currentCard, missingItems, { cached: true, cachedAt: entry.cachedAt, ageDays });
-          showToast(`Loaded benefits for ${currentCard.patientName || "patient"}`);
+          showToast(`Loaded benefits for ${cachedName || "patient"}`);
         }
         break;
       }

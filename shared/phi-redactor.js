@@ -137,7 +137,8 @@ PracticePilot.phiRedactor = {
     const patterns = [
       /Patient\s+Name\s*:\s*([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,3})/i,
       /Patient\s*:\s*([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,3})/i,
-      /Name\s*:\s*([A-Z][A-Za-z'\-]+,\s*[A-Z][A-Za-z'\-]+)/i, // Last, First
+      // Last, First format — only when preceded by explicit patient/subscriber/member/insured label
+      /(?:Patient|Subscriber|Member|Insured)\s+Name\s*:\s*([A-Z][A-Za-z'\-]+,\s*[A-Z][A-Za-z'\-]+)/i,
       /Subscriber\s+Name\s*:\s*([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,3})/i,
       /Member\s+Name\s*:\s*([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,3})/i,
       /Insured\s+Name\s*:\s*([A-Z][A-Za-z'\-]+(?:\s+[A-Z][A-Za-z'\-]+){1,3})/i,

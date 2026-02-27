@@ -314,10 +314,12 @@ PracticePilot.patientContext = {
     // Strategy 2: PHI redactor patterns ("Patient Name: ...", etc.)
     const phiName = PracticePilot.phiRedactor?.extractPatientName(normalizedText) || null;
     if (phiName) {
-      // Apply same blocklist check to PHI-extracted names
-      const phiWords = phiName.split(/\s+/).map(w => w.toLowerCase());
-      if (phiWords.some(w => NEVER_IN_NAME.has(w))) {
-        console.warn("[PracticePilot] PHI redactor returned UI label as name, rejecting:", phiName);
+      // Reject only if the MAJORITY of words are UI label words
+      // (a single shared word like "Bill" should not reject a real name)
+      const phiWords = phiName.replace(/,/g, "").split(/\s+/).map(w => w.toLowerCase());
+      const blockedCount = phiWords.filter(w => NEVER_IN_NAME.has(w)).length;
+      if (blockedCount > 0 && blockedCount >= Math.ceil(phiWords.length / 2)) {
+        console.warn("[PracticePilot] Name extraction: rejected PHI-extracted name (UI labels):", phiName);
         return null;
       }
     }
