@@ -461,7 +461,7 @@
         {
           "type": "",
           "selector": "#curve_Appointment_2 > div.apptBorder > div.main.dojoDndTarget",
-          "text": "11:00 am - 12:00 pm *\n[REDACTED]McCullough (NP)\n[REDACTED] - adult . Oral, D1206, D0350, D1110, D"
+          "text": "11:00 am - 12:00 pm *\n[REDACTED]Cullough (NP)\n[REDACTED] - adult . Oral, D1206, D0350, D1110, D"
         }
       ]
     },
@@ -499,12 +499,12 @@
         {
           "type": "",
           "selector": "#dojox_grid_DataGrid_0-page-0 > div.dojoxGridRow.dojoxGridRowOver:nth-child(1) > table.dojoxGridRowTable > tbody > tr > td.dojoxGridCell.dojoxGridCellOver:nth-child(4)",
-          "text": "An email was sent to [REDACTED]McCullough at [REDACTED] for form completion (Status : Se"
+          "text": "An email was sent to [REDACTED]Cullough at [REDACTED] for form completion (Status : Se"
         },
         {
           "type": "",
           "selector": "#dojox_grid_DataGrid_0-page-0 > div.dojoxGridRow.dojoxGridRowOdd:nth-child(2) > table.dojoxGridRowTable > tbody > tr > td.dojoxGridCell.dojoxGridCellOver:nth-child(4)",
-          "text": "A text was sent to [REDACTED]McCullough at [REDACTED] for form completion (Status : Delivered)"
+          "text": "A text was sent to [REDACTED]Cullough at [REDACTED] for form completion (Status : Delivered)"
         }
       ]
     },
@@ -727,7 +727,7 @@
         {
           "type": "",
           "selector": "#curve_Appointment_18 > div.apptBorder > div.main.dojoDndTarget",
-          "text": "12:00 pm - 1:00 pm *\n[REDACTED]\nConsult. D0220, D0270, D0140"
+          "text": "12:00 pm - 1:00 pm *\n[REDACTED]. D0220, D0270, D0140"
         }
       ]
     },
@@ -737,7 +737,7 @@
         {
           "type": "",
           "selector": "#curve_Appointment_16 > div.apptBorder > div.main.dojoDndTarget > div.appointmentDetails:nth-child(3)",
-          "text": "[REDACTED]McCullough (NP)\n[REDACTED] - adult . Oral, D1206, D0350, D1110, D1310, D1330, D0210, D0"
+          "text": "[REDACTED]Cullough (NP)\n[REDACTED] - adult . Oral, D1206, D0350, D1110, D1310, D1330, D0210, D0"
         }
       ]
     },

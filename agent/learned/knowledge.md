@@ -1,7 +1,7 @@
 # Curve Hero — Learned Workflows
 
 *2 sessions, 95 events*
-*Updated: 2026-03-16T06:26*
+*Updated: 2026-03-16T06:27*
 
 ## UI Sections
 
@@ -74,8 +74,8 @@
 - : `#username` 
 
 ### 7. dojox_grid_DataGrid_0-page-0
-- : `#dojox_grid_DataGrid_0-page-0 > div.dojoxGridRow.d` An email was sent to [REDACTED]McCullough at [REDA
-- : `#dojox_grid_DataGrid_0-page-0 > div.dojoxGridRow.d` A text was sent to [REDACTED]McCullough at [REDACT
+- : `#dojox_grid_DataGrid_0-page-0 > div.dojoxGridRow.d` An email was sent to [REDACTED]Cullough at [REDACT
+- : `#dojox_grid_DataGrid_0-page-0 > div.dojoxGridRow.d` A text was sent to [REDACTED]Cullough at [REDACTED
 
 ### 8. Page
 - navigation: `` 
