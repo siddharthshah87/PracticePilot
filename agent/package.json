@@ -1,0 +1,22 @@
+{
+  "name": "practicepilot-agent",
+  "version": "1.0.0",
+  "description": "MCP server for dental office browser automation — batch eligibility, claims follow-up, and scheduled tasks via Chrome",
+  "type": "module",
+  "main": "src/server.js",
+  "bin": {
+    "practicepilot-agent": "src/server.js"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "cron": "node src/cron.js",
+    "install-browsers": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.0",
+    "playwright": "^1.50.0",
+    "zod": "^3.25.0"
+  }
+}

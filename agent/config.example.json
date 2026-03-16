@@ -1,0 +1,99 @@
+{
+  "curve": {
+    "url": "https://www.curvehero.com",
+    "username": "",
+    "password": ""
+  },
+  "payers": {
+    "delta_dental": {
+      "label": "Delta Dental",
+      "url": "https://www.deltadental.com/us/en/login.html",
+      "username": "",
+      "password": ""
+    },
+    "cigna": {
+      "label": "Cigna",
+      "url": "https://cignaforhcp.cigna.com/app/login",
+      "username": "",
+      "password": ""
+    },
+    "metlife": {
+      "label": "MetLife",
+      "url": "https://online.metlife.com/edge/web/public/login",
+      "username": "",
+      "password": ""
+    },
+    "aetna": {
+      "label": "Aetna",
+      "url": "https://navinet.navimedix.com/sign-in",
+      "username": "",
+      "password": ""
+    },
+    "humana": {
+      "label": "Humana",
+      "url": "https://www.humana.com/provider/login",
+      "username": "",
+      "password": ""
+    },
+    "united": {
+      "label": "UnitedHealthcare",
+      "url": "https://www.uhcprovider.com/en/login.html",
+      "username": "",
+      "password": ""
+    },
+    "anthem": {
+      "label": "Anthem BCBS",
+      "url": "https://www.availity.com/",
+      "username": "",
+      "password": ""
+    },
+    "guardian": {
+      "label": "Guardian",
+      "url": "https://www.guardiananytime.com/gafd/wps/portal/fdhome",
+      "username": "",
+      "password": ""
+    },
+    "bcbs": {
+      "label": "BCBS",
+      "url": "https://www.availity.com/",
+      "username": "",
+      "password": ""
+    }
+  },
+  "browser": {
+    "headless": true,
+    "slowMo": 0,
+    "timeout": 30000
+  },
+  "screenshots": {
+    "dir": "./screenshots",
+    "enabled": true
+  },
+  "email": {
+    "to": "info@meritdental.care",
+    "from": "agent@meritdental.care",
+    "smtp": {
+      "host": "",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "",
+        "pass": ""
+      }
+    }
+  },
+  "cron": {
+    "batchEligibility": {
+      "schedule": "0 5 * * 1-5",
+      "enabled": false
+    },
+    "morningReport": {
+      "schedule": "0 6 * * 1-5",
+      "enabled": false
+    },
+    "claimsFollowup": {
+      "schedule": "0 7 * * 1",
+      "enabled": false
+    }
+  }
+}
