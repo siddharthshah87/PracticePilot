@@ -1,0 +1,810 @@
+{
+  "selectorFreq": {
+    "#username": 7,
+    "#mat-input-1": 6,
+    "bal-root > bal-login > div.login-container.login-container-visible > div.login-and-ads-content-container > div.login-content-container > div > form.login-form > div.login-form-actions:nth-child(3) > button.mdc-button.mdc-button--unelevated > span.mdc-button__label:nth-child(2)": 2,
+    "bal-root > bal-login > div.login-container.login-container-visible > div.login-and-ads-content-container > div.login-content-container > div > form.login-form": 2,
+    "#patientSearchBox > div.filteredSearch > div.curveTextField:nth-child(1) > input.textField": 2,
+    "div.curveDialogUnderlay": 3,
+    "#dijit_layout__TabButton_5": 2,
+    "#curve_Appointment_1 > div.apptBorder > div.main.dojoDndTarget > div.appointmentDetails:nth-child(3) > div.appointmentDetail:nth-child(2)": 2,
+    "#curve_Appointment_2 > div.apptBorder > div.main.dojoDndTarget": 1,
+    "#forms > div.dijitTitlePaneTitle.dijitClosed:nth-child(1) > div.arrowBox:nth-child(1) > div.dijitInline.dijitArrowNode": 1,
+    "#activityLogProfile > div.dijitTitlePaneTitle.dijitClosed:nth-child(1) > div.textNode.dijitTitlePaneTextNodeHover:nth-child(2)": 1,
+    "#dojox_grid_DataGrid_0-page-0 > div.dojoxGridRow.dojoxGridRowOver:nth-child(1) > table.dojoxGridRowTable > tbody > tr > td.dojoxGridCell.dojoxGridCellOver:nth-child(4)": 1,
+    "#dojox_grid_DataGrid_0-page-0 > div.dojoxGridRow.dojoxGridRowOdd:nth-child(2) > table.dojoxGridRowTable > tbody > tr > td.dojoxGridCell.dojoxGridCellOver:nth-child(4)": 1,
+    "#curveLogo": 1,
+    "#appSwitcher > app-switcher-button > div.switcher-button-wrapper > button.switcher-button.mat-menu-trigger > span.mat-button-wrapper > mat-icon.mat-icon.notranslate": 1,
+    "div > div:nth-child(1)": 2,
+    "#appSwitcher > app-switcher-button > div.switcher-button-wrapper > button.switcher-button.mat-menu-trigger > span.mat-button-wrapper": 1,
+    "#dijit_layout__TabButton_9": 1,
+    "#curve_Appointment_14 > div.apptBorder > div.main.dojoDndTarget > div.appointmentDetails:nth-child(3) > div.appointmentDetail:nth-child(2)": 1,
+    "#curve_widgets_Angular7Container_8 > forms-sidekick-shim > forms-sidekick > div.curve-dense-theme.forms-sidekick-container > mat-list.mat-list.mat-list-base > span.form-button-container > button.mat-elevation-z0.mat-stroked-button:nth-child(1)": 1,
+    "#mat-input-0": 1,
+    "#mat-select-5 > div.mat-select-trigger > div.mat-select-value:nth-child(1)": 1,
+    "#mat-option-21 > span.mat-option-text": 1,
+    "#mat-checkbox-1 > label.mat-checkbox-layout": 2,
+    "#mat-checkbox-1-input": 8,
+    "#mat-dialog-0 > add-forms-dialog > dialog-content > mat-dialog-actions.mat-dialog-actions > dialog-content-actions.dialog-content-actions > div > button.mat-button.mat-button-base:nth-child(1) > span.mat-button-wrapper": 1,
+    "#curve_Appointment_20 > div.apptBorder > div.main.dojoDndTarget > div.appointmentDetails:nth-child(3) > div.appointmentDetail:nth-child(2)": 1,
+    "#curve_Appointment_18 > div.apptBorder > div.main.dojoDndTarget": 1,
+    "#curve_Appointment_16 > div.apptBorder > div.main.dojoDndTarget > div.appointmentDetails:nth-child(3)": 1,
+    "#insuranceProfile > div.dijitTitlePaneTitle.dijitClosed:nth-child(1) > div.arrowBox:nth-child(1) > div.dijitInline.dijitArrowNode": 1,
+    "#curve_InsurancePolicyMini_0 > div > div > table > tbody > tr:nth-child(1) > td.editable:nth-child(2)": 1,
+    "#insurancePlanEdit": 1,
+    "#curve_insurance_InsurancePlanCoverage_0 > span > span.editable": 1,
+    "#curve_core_Button_8 > div.selectableItem.block:nth-child(2) > div.header > div.title": 1,
+    "#adHocFormSaveButton": 2
+  },
+  "clickTargets": {},
+  "navFlows": [
+    [
+      "/login",
+      "/signin-oidc",
+      "/"
+    ],
+    [
+      "/login",
+      "/signin-oidc",
+      "/"
+    ]
+  ],
+  "sectionUsage": {
+    "username": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "mat-input-1": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "patientSearchBox": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "dijit_layout__TabButton_5": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "curve_Appointment_1": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "curve_Appointment_2": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "forms": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "activityLogProfile": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "dojox_grid_DataGrid_0-page-0": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "curveLogo": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "appSwitcher": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "dijit_layout__TabButton_9": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "curve_Appointment_14": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "curve_widgets_Angular7Container_8": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "mat-input-0": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "mat-select-5": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "mat-option-21": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "mat-checkbox-1": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "mat-checkbox-1-input": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "mat-dialog-0": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "curve_Appointment_20": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "curve_Appointment_18": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "curve_Appointment_16": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "insuranceProfile": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "curve_InsurancePolicyMini_0": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "insurancePlanEdit": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "curve_insurance_InsurancePlanCoverage_0": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "curve_core_Button_8": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    },
+    "adHocFormSaveButton": {
+      "clicks": 0,
+      "inputs": 0,
+      "focuses": 0
+    }
+  },
+  "inputFields": {},
+  "workflows": [
+    {
+      "steps": [
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "navigation"
+        }
+      ],
+      "section": ""
+    },
+    {
+      "section": "username",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#username",
+          "text": ""
+        },
+        {
+          "type": "",
+          "selector": "#username",
+          "text": ""
+        },
+        {
+          "type": "",
+          "selector": "#username",
+          "text": ""
+        },
+        {
+          "type": "",
+          "selector": "#username",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "mat-input-1",
+      "steps": [
+        {
+          "type": "password",
+          "selector": "#mat-input-1",
+          "text": ""
+        },
+        {
+          "type": "password",
+          "selector": "#mat-input-1",
+          "text": ""
+        },
+        {
+          "type": "password",
+          "selector": "#mat-input-1",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "",
+      "steps": [
+        {
+          "type": "",
+          "selector": "bal-root > bal-login > div.login-container.login-container-visible > div.login-and-ads-content-container > div.login-content-container > div > form.login-form > div.login-form-actions:nth-child(3) > button.mdc-button.mdc-button--unelevated > span.mdc-button__label:nth-child(2)",
+          "text": "Log in"
+        },
+        {
+          "type": "submit",
+          "selector": "bal-root > bal-login > div.login-container.login-container-visible > div.login-and-ads-content-container > div.login-content-container > div > form.login-form"
+        },
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "navigation"
+        }
+      ]
+    },
+    {
+      "section": "patientSearchBox",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#patientSearchBox > div.filteredSearch > div.curveTextField:nth-child(1) > input.textField",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "",
+      "steps": [
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "note"
+        },
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "",
+          "selector": "div.curveDialogUnderlay",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "dijit_layout__TabButton_5",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#dijit_layout__TabButton_5",
+          "text": "Week"
+        }
+      ]
+    },
+    {
+      "section": "curve_Appointment_1",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curve_Appointment_1 > div.apptBorder > div.main.dojoDndTarget > div.appointmentDetails:nth-child(3) > div.appointmentDetail:nth-child(2)",
+          "text": "Visit 2. D2950, D2740, D2950, D2740"
+        }
+      ]
+    },
+    {
+      "steps": [
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "navigation"
+        }
+      ],
+      "section": ""
+    },
+    {
+      "section": "username",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#username",
+          "text": ""
+        },
+        {
+          "type": "",
+          "selector": "#username",
+          "text": ""
+        },
+        {
+          "type": "",
+          "selector": "#username",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "mat-input-1",
+      "steps": [
+        {
+          "type": "password",
+          "selector": "#mat-input-1",
+          "text": ""
+        },
+        {
+          "type": "password",
+          "selector": "#mat-input-1",
+          "text": ""
+        },
+        {
+          "type": "password",
+          "selector": "#mat-input-1",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "",
+      "steps": [
+        {
+          "type": "",
+          "selector": "bal-root > bal-login > div.login-container.login-container-visible > div.login-and-ads-content-container > div.login-content-container > div > form.login-form > div.login-form-actions:nth-child(3) > button.mdc-button.mdc-button--unelevated > span.mdc-button__label:nth-child(2)",
+          "text": "Log in"
+        },
+        {
+          "type": "submit",
+          "selector": "bal-root > bal-login > div.login-container.login-container-visible > div.login-and-ads-content-container > div.login-content-container > div > form.login-form"
+        },
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "navigation"
+        }
+      ]
+    },
+    {
+      "section": "patientSearchBox",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#patientSearchBox > div.filteredSearch > div.curveTextField:nth-child(1) > input.textField",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "",
+      "steps": [
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "note"
+        },
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "",
+          "selector": "div.curveDialogUnderlay",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "dijit_layout__TabButton_5",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#dijit_layout__TabButton_5",
+          "text": "Week"
+        }
+      ]
+    },
+    {
+      "section": "curve_Appointment_1",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curve_Appointment_1 > div.apptBorder > div.main.dojoDndTarget > div.appointmentDetails:nth-child(3) > div.appointmentDetail:nth-child(2)",
+          "text": "Visit 2. D2950, D2740, D2950, D2740"
+        }
+      ]
+    },
+    {
+      "section": "curve_Appointment_2",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curve_Appointment_2 > div.apptBorder > div.main.dojoDndTarget",
+          "text": "11:00 am - 12:00 pm *\n[REDACTED]McCullough (NP)\n[REDACTED] - adult . Oral, D1206, D0350, D1110, D"
+        }
+      ]
+    },
+    {
+      "section": "forms",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#forms > div.dijitTitlePaneTitle.dijitClosed:nth-child(1) > div.arrowBox:nth-child(1) > div.dijitInline.dijitArrowNode",
+          "text": "+"
+        }
+      ]
+    },
+    {
+      "section": "activityLogProfile",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#activityLogProfile > div.dijitTitlePaneTitle.dijitClosed:nth-child(1) > div.textNode.dijitTitlePaneTextNodeHover:nth-child(2)",
+          "text": "Correspondence"
+        }
+      ]
+    },
+    {
+      "section": "",
+      "steps": [
+        {
+          "type": "navigation"
+        }
+      ]
+    },
+    {
+      "section": "dojox_grid_DataGrid_0-page-0",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#dojox_grid_DataGrid_0-page-0 > div.dojoxGridRow.dojoxGridRowOver:nth-child(1) > table.dojoxGridRowTable > tbody > tr > td.dojoxGridCell.dojoxGridCellOver:nth-child(4)",
+          "text": "An email was sent to [REDACTED]McCullough at [REDACTED] for form completion (Status : Se"
+        },
+        {
+          "type": "",
+          "selector": "#dojox_grid_DataGrid_0-page-0 > div.dojoxGridRow.dojoxGridRowOdd:nth-child(2) > table.dojoxGridRowTable > tbody > tr > td.dojoxGridCell.dojoxGridCellOver:nth-child(4)",
+          "text": "A text was sent to [REDACTED]McCullough at [REDACTED] for form completion (Status : Delivered)"
+        }
+      ]
+    },
+    {
+      "section": "curveLogo",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curveLogo",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "",
+      "steps": [
+        {
+          "type": "navigation"
+        },
+        {
+          "type": "",
+          "selector": "div.curveDialogUnderlay",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "appSwitcher",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#appSwitcher > app-switcher-button > div.switcher-button-wrapper > button.switcher-button.mat-menu-trigger > span.mat-button-wrapper > mat-icon.mat-icon.notranslate",
+          "text": "apps"
+        }
+      ]
+    },
+    {
+      "section": "",
+      "steps": [
+        {
+          "type": "",
+          "selector": "div > div:nth-child(1)",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "appSwitcher",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#appSwitcher > app-switcher-button > div.switcher-button-wrapper > button.switcher-button.mat-menu-trigger > span.mat-button-wrapper",
+          "text": "apps"
+        }
+      ]
+    },
+    {
+      "section": "",
+      "steps": [
+        {
+          "type": "",
+          "selector": "div > div:nth-child(1)",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "dijit_layout__TabButton_9",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#dijit_layout__TabButton_9",
+          "text": "Week"
+        }
+      ]
+    },
+    {
+      "section": "curve_Appointment_14",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curve_Appointment_14 > div.apptBorder > div.main.dojoDndTarget > div.appointmentDetails:nth-child(3) > div.appointmentDetail:nth-child(2)",
+          "text": "[REDACTED]. D1110, D0210, D0150, New"
+        }
+      ]
+    },
+    {
+      "section": "curve_widgets_Angular7Container_8",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curve_widgets_Angular7Container_8 > forms-sidekick-shim > forms-sidekick > div.curve-dense-theme.forms-sidekick-container > mat-list.mat-list.mat-list-base > span.form-button-container > button.mat-elevation-z0.mat-stroked-button:nth-child(1)",
+          "text": "[REDACTED]"
+        }
+      ]
+    },
+    {
+      "section": "mat-input-0",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#mat-input-0",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "mat-select-5",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#mat-select-5 > div.mat-select-trigger > div.mat-select-value:nth-child(1)",
+          "text": "All"
+        }
+      ]
+    },
+    {
+      "section": "mat-option-21",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#mat-option-21 > span.mat-option-text",
+          "text": "[REDACTED]"
+        }
+      ]
+    },
+    {
+      "section": "mat-checkbox-1",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#mat-checkbox-1 > label.mat-checkbox-layout",
+          "text": "[REDACTED]"
+        }
+      ]
+    },
+    {
+      "section": "mat-checkbox-1-input",
+      "steps": [
+        {
+          "type": "checkbox",
+          "selector": "#mat-checkbox-1-input",
+          "text": ""
+        },
+        {
+          "type": "checkbox",
+          "selector": "#mat-checkbox-1-input",
+          "text": ""
+        },
+        {
+          "type": "checkbox",
+          "selector": "#mat-checkbox-1-input",
+          "text": ""
+        },
+        {
+          "type": "checkbox",
+          "selector": "#mat-checkbox-1-input",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "mat-checkbox-1",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#mat-checkbox-1 > label.mat-checkbox-layout",
+          "text": "[REDACTED]"
+        }
+      ]
+    },
+    {
+      "section": "mat-checkbox-1-input",
+      "steps": [
+        {
+          "type": "checkbox",
+          "selector": "#mat-checkbox-1-input",
+          "text": ""
+        },
+        {
+          "type": "checkbox",
+          "selector": "#mat-checkbox-1-input",
+          "text": ""
+        },
+        {
+          "type": "checkbox",
+          "selector": "#mat-checkbox-1-input",
+          "text": ""
+        },
+        {
+          "type": "checkbox",
+          "selector": "#mat-checkbox-1-input",
+          "text": ""
+        }
+      ]
+    },
+    {
+      "section": "mat-dialog-0",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#mat-dialog-0 > add-forms-dialog > dialog-content > mat-dialog-actions.mat-dialog-actions > dialog-content-actions.dialog-content-actions > div > button.mat-button.mat-button-base:nth-child(1) > span.mat-button-wrapper",
+          "text": "Cancel"
+        }
+      ]
+    },
+    {
+      "section": "curve_Appointment_20",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curve_Appointment_20 > div.apptBorder > div.main.dojoDndTarget > div.appointmentDetails:nth-child(3) > div.appointmentDetail:nth-child(2)",
+          "text": "[REDACTED] - adult . Oral, D1206, D0350, D1110, D1310, D1330, D0210, D0150"
+        }
+      ]
+    },
+    {
+      "section": "curve_Appointment_18",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curve_Appointment_18 > div.apptBorder > div.main.dojoDndTarget",
+          "text": "12:00 pm - 1:00 pm *\n[REDACTED]\nConsult. D0220, D0270, D0140"
+        }
+      ]
+    },
+    {
+      "section": "curve_Appointment_16",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curve_Appointment_16 > div.apptBorder > div.main.dojoDndTarget > div.appointmentDetails:nth-child(3)",
+          "text": "[REDACTED]McCullough (NP)\n[REDACTED] - adult . Oral, D1206, D0350, D1110, D1310, D1330, D0210, D0"
+        }
+      ]
+    },
+    {
+      "section": "insuranceProfile",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#insuranceProfile > div.dijitTitlePaneTitle.dijitClosed:nth-child(1) > div.arrowBox:nth-child(1) > div.dijitInline.dijitArrowNode",
+          "text": "+"
+        }
+      ]
+    },
+    {
+      "section": "curve_InsurancePolicyMini_0",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curve_InsurancePolicyMini_0 > div > div > table > tbody > tr:nth-child(1) > td.editable:nth-child(2)",
+          "text": "CALIFORNIA ASSOCIATION OF GOLF & PRIVATE CLUBS"
+        }
+      ]
+    },
+    {
+      "section": "insurancePlanEdit",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#insurancePlanEdit",
+          "text": "[REDACTED]"
+        }
+      ]
+    },
+    {
+      "section": "curve_insurance_InsurancePlanCoverage_0",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curve_insurance_InsurancePlanCoverage_0 > span > span.editable",
+          "text": "[REDACTED]"
+        }
+      ]
+    },
+    {
+      "section": "curve_core_Button_8",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#curve_core_Button_8 > div.selectableItem.block:nth-child(2) > div.header > div.title",
+          "text": "OK"
+        }
+      ]
+    },
+    {
+      "section": "adHocFormSaveButton",
+      "steps": [
+        {
+          "type": "",
+          "selector": "#adHocFormSaveButton",
+          "text": "[REDACTED]"
+        },
+        {
+          "type": "",
+          "selector": "#adHocFormSaveButton",
+          "text": "[REDACTED]"
+        }
+      ]
+    }
+  ]
+}
