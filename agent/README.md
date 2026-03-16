@@ -1,16 +1,139 @@
 # PracticePilot Agent
 
-MCP server for dental office browser automation. Lets any AI agent (Claude Desktop, VS Code Copilot, Cursor) drive Chrome to interact with Curve Dental and insurance payer portals.
+Dental office automation for Merit Dental. Two things it does today:
 
-## What it does
+1. **Workflow Observer** — Watches you work in Curve Hero, records every click/input/navigation. Over time, builds a complete map of how you use Curve so we can automate it.
 
-**Two modes:**
+2. **MCP Server** — AI agent tools for browser automation (Curve, payer portals). Connect from Claude Desktop or VS Code Copilot.
 
-1. **MCP Server** — Connect from any MCP client. The AI agent gets browser automation tools + dental-specific workflow tools. You tell it what to do in natural language.
+---
 
-2. **Cron Scheduler** — Runs on a schedule. Pulls data from Curve, emails reports to info@meritdental.care.
+## Quick Start (Clinic Computer)
 
-## Available Tools (30+)
+### First-Time Setup
+
+```bash
+# 1. Clone the repo
+git clone git@github.com:siddharthshah87/PracticePilot.git
+cd PracticePilot/agent
+
+# 2. Install Node.js dependencies + Chromium browser
+npm install
+npm run install-browsers
+
+# 3. Create your config file
+cp config.example.json config.json
+```
+
+Edit `config.json` — fill in your Curve credentials:
+
+```json
+{
+  "curve": {
+    "url": "https://meritdental.curvehero.com",
+    "username": "EV",
+    "password": "your-password"
+  }
+}
+```
+
+### Daily Workflow: Record
+
+```bash
+# Start the observer (opens Curve in a browser window)
+npm run observe
+```
+
+**What happens:**
+- A Chrome window opens and logs into Curve automatically
+- Do your normal work — scheduling, forms, insurance, claims, whatever
+- Everything is recorded: clicks, inputs, navigation, screenshots every 30 sec
+
+**While recording:**
+- Press `s` → take a screenshot
+- Press `n` → add a note (e.g. "this is how I assign forms to new patients")
+- Press `q` → stop recording and save
+
+Sessions are saved locally in `workflows/<timestamp>/` (gitignored, stays on your machine).
+
+### After Recording: Sync
+
+```bash
+# Strip all patient info and push learnings to git
+npm run sync
+```
+
+**What this does:**
+1. Reads all recorded sessions
+2. **Strips PHI** — removes patient names, emails, phones, passwords, addresses, DOBs, SSNs
+3. Saves sanitized patterns to `learned/` (selectors, click targets, workflow sequences)
+4. Commits and pushes to GitHub
+
+The `learned/` folder is what I read to build automation scripts. No patient data ever leaves your machine.
+
+---
+
+## File Structure
+
+```
+agent/
+├── observe.mjs          # Workflow recorder (run this daily)
+├── sync.mjs             # PHI stripper + git push
+├── build-knowledge.mjs  # Builds knowledge.md from raw sessions (local only)
+├── config.json           # Your credentials (gitignored)
+├── workflows/            # Raw recordings with screenshots (gitignored)
+├── learned/              # Sanitized patterns (committed to git)
+│   ├── events-sanitized.jsonl
+│   ├── patterns.json
+│   └── knowledge.md
+├── src/
+│   ├── server.js         # MCP server entry point
+│   ├── browser.js        # Playwright browser wrapper
+│   ├── config.js         # Config loader
+│   └── tools/            # MCP tool modules
+│       ├── browser-tools.js
+│       ├── curve-tools.js
+│       ├── forms-tools.js
+│       ├── payer-tools.js
+│       ├── batch-tools.js
+│       └── report-tools.js
+├── test-login.mjs        # Manual test: Curve login
+├── test-forms.mjs        # Manual test: form assignment
+└── .browser-data/        # Chrome session cookies (gitignored)
+```
+
+---
+
+## All Commands
+
+| Command | What it does |
+|---------|-------------|
+| `npm run observe` | Start recording your Curve work |
+| `npm run sync` | Strip PHI, push learnings to git |
+| `npm run knowledge` | Build knowledge.md from raw sessions (local) |
+| `npm run start` | Start MCP server (for AI agent connections) |
+| `npm run cron` | Run scheduled tasks (morning report, batch eligibility) |
+| `npm run install-browsers` | Install Playwright Chromium |
+
+---
+
+## Troubleshooting
+
+**Browser won't launch / "SingletonLock" error:**
+```bash
+rm -f .browser-data/SingletonLock
+npm run observe
+```
+
+**MFA required on login:**
+The observer will prompt you for the 6-digit code. After entering it once, the session cookie is saved in `.browser-data/` so you won't need MFA again.
+
+**"Add Form" button not visible:**
+The Forms pane loads async. Click the patient's appointment first, wait 2-3 seconds, then open the Forms section.
+
+---
+
+## MCP Server Tools (30+)
 
 ### Browser Control
 | Tool | Description |
