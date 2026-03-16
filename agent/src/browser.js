@@ -14,17 +14,31 @@ let browser = null;
 let context = null;
 const pages = new Map(); // id -> { page, label }
 let pageCounter = 0;
+const userDataDir = join(__dirname, '..', '.browser-data');
 
 export async function launchBrowser(opts = {}) {
+  if (context) return; // already running (persistent context acts as both browser+context)
   if (browser && browser.isConnected()) return;
-  browser = await chromium.launch({
-    headless: opts.headless ?? config.browser.headless,
-    slowMo: opts.slowMo ?? config.browser.slowMo,
-  });
-  context = await browser.newContext({
+
+  const headless = opts.headless ?? config.browser.headless;
+  const slowMo = opts.slowMo ?? config.browser.slowMo;
+
+  // Use persistent context so cookies, localStorage, and "remember device" tokens survive across runs
+  context = await chromium.launchPersistentContext(userDataDir, {
+    headless,
+    slowMo,
     viewport: { width: 1280, height: 900 },
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    args: [
+      '--disable-session-crashed-bubble',
+      '--disable-infobars',
+      '--no-default-browser-check',
+      '--hide-crash-restore-bubble',
+      '--disable-save-password-bubble',
+    ],
+    ignoreDefaultArgs: ['--enable-automation'],
   });
+  browser = null; // persistent context manages its own browser
 }
 
 export async function closeBrowser() {
@@ -33,10 +47,13 @@ export async function closeBrowser() {
   }
   pages.clear();
   pageCounter = 0;
+  if (context) {
+    await context.close();
+    context = null;
+  }
   if (browser) {
     await browser.close();
     browser = null;
-    context = null;
   }
 }
 

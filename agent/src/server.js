@@ -10,6 +10,7 @@ import { registerCurveTools } from './tools/curve-tools.js';
 import { registerPayerTools } from './tools/payer-tools.js';
 import { registerBatchTools } from './tools/batch-tools.js';
 import { registerReportTools } from './tools/report-tools.js';
+import { registerFormsTools } from './tools/forms-tools.js';
 
 const server = new McpServer({
   name: 'practicepilot-agent',
@@ -22,6 +23,7 @@ registerCurveTools(server);
 registerPayerTools(server);
 registerBatchTools(server);
 registerReportTools(server);
+registerFormsTools(server);
 
 // Connect via stdio
 const transport = new StdioServerTransport();

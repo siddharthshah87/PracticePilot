@@ -30,3 +30,4 @@ agent/node_modules/
 agent/config.json
 agent/screenshots/
 agent/reports/
+agent/.browser-data/

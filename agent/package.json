@@ -9,6 +9,8 @@
   },
   "scripts": {
     "start": "node src/server.js",
+    "observe": "node observe.mjs",
+    "knowledge": "node build-knowledge.mjs",
     "cron": "node src/cron.js",
     "install-browsers": "npx playwright install chromium"
   },
